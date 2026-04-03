@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "repo2txt",
+  "version": "2.0.0",
+  "description": "Convert repositories and local folders to plain text for LLM prompts.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open repo2txt"
+  },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*"
+  ]
+}
