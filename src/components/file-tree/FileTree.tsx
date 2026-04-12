@@ -19,7 +19,10 @@ interface FileTreeProps {
 /**
  * Flatten tree structure for virtual scrolling
  */
-function flattenTree(nodes: TreeNode[], showExcluded: boolean): Array<{
+function flattenTree(
+  nodes: TreeNode[],
+  showExcluded: boolean
+): Array<{
   node: TreeNode;
   depth: number;
 }> {
@@ -27,8 +30,7 @@ function flattenTree(nodes: TreeNode[], showExcluded: boolean): Array<{
 
   function traverse(nodes: TreeNode[], depth: number) {
     for (const node of nodes) {
-      // Skip if not visible and showExcluded is false
-      if (node.visible === false && !showExcluded) {
+      if (node.excluded && !showExcluded) {
         continue;
       }
 
@@ -55,10 +57,7 @@ export function FileTree({
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Flatten tree for virtual scrolling
-  const flatNodes = useMemo(
-    () => flattenTree(nodes, showExcluded),
-    [nodes, showExcluded]
-  );
+  const flatNodes = useMemo(() => flattenTree(nodes, showExcluded), [nodes, showExcluded]);
 
   // Virtual scrolling
   const virtualizer = useVirtualizer({

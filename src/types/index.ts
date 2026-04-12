@@ -2,7 +2,7 @@
  * Core type definitions for repo2txt v2.0
  */
 
-export type ProviderType = 'github' | 'local' | 'gitlab' | 'azure';
+export type ProviderType = 'github' | 'local';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -82,4 +82,19 @@ export interface ErrorInfo {
   code?: string;
   userMessage: string;
   recovery?: () => void;
+}
+
+export interface FileSystemHandle {
+  kind: 'file' | 'directory';
+  name: string;
+}
+
+export interface FileSystemFileHandle extends FileSystemHandle {
+  kind: 'file';
+  getFile(): Promise<File>;
+}
+
+export interface FileSystemDirectoryHandle extends FileSystemHandle {
+  kind: 'directory';
+  values(): AsyncIterableIterator<FileSystemHandle>;
 }

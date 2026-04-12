@@ -4,6 +4,7 @@ import { setupServer } from 'msw/node';
 import { GitHubProvider } from '../GitHubProvider';
 import { ErrorCode } from '@/lib/providers/types';
 import type { FileNode } from '@/types';
+import { useStore } from '@/store';
 
 // Mock GitHub API responses
 const mockBranchesResponse = [
@@ -12,17 +13,31 @@ const mockBranchesResponse = [
   { ref: 'refs/heads/feature/test-branch' },
 ];
 
-const mockTagsResponse = [
-  { ref: 'refs/tags/v1.0.0' },
-  { ref: 'refs/tags/v2.0.0' },
-];
+const mockTagsResponse = [{ ref: 'refs/tags/v1.0.0' }, { ref: 'refs/tags/v2.0.0' }];
 
 const mockTreeResponse = {
   sha: 'tree-sha-123',
   tree: [
-    { path: 'README.md', type: 'blob', url: 'https://api.github.com/repos/owner/repo/git/blobs/1', size: 100, sha: 'sha1' },
-    { path: 'src', type: 'tree', url: 'https://api.github.com/repos/owner/repo/git/trees/2', sha: 'sha2' },
-    { path: 'src/index.ts', type: 'blob', url: 'https://api.github.com/repos/owner/repo/git/blobs/3', size: 200, sha: 'sha3' },
+    {
+      path: 'README.md',
+      type: 'blob',
+      url: 'https://api.github.com/repos/owner/repo/git/blobs/1',
+      size: 100,
+      sha: 'sha1',
+    },
+    {
+      path: 'src',
+      type: 'tree',
+      url: 'https://api.github.com/repos/owner/repo/git/trees/2',
+      sha: 'sha2',
+    },
+    {
+      path: 'src/index.ts',
+      type: 'blob',
+      url: 'https://api.github.com/repos/owner/repo/git/blobs/3',
+      size: 200,
+      sha: 'sha3',
+    },
   ],
 };
 
@@ -77,6 +92,7 @@ describe('GitHubProvider', () => {
 
   beforeEach(() => {
     provider = new GitHubProvider();
+    useStore.getState().clearCache();
   });
 
   describe('getType and getName', () => {
@@ -99,7 +115,9 @@ describe('GitHubProvider', () => {
     });
 
     it('should validate repo URL with branch and path', () => {
-      expect(provider.validateUrl('https://github.com/owner/repo/tree/main/src/components')).toBe(true);
+      expect(provider.validateUrl('https://github.com/owner/repo/tree/main/src/components')).toBe(
+        true
+      );
     });
 
     it('should handle trailing slash', () => {
@@ -108,7 +126,6 @@ describe('GitHubProvider', () => {
 
     it('should reject invalid URLs', () => {
       expect(provider.validateUrl('https://github.com/owner')).toBe(false);
-      expect(provider.validateUrl('https://gitlab.com/owner/repo')).toBe(false);
       expect(provider.validateUrl('not-a-url')).toBe(false);
       expect(provider.validateUrl('')).toBe(false);
     });
@@ -136,7 +153,9 @@ describe('GitHubProvider', () => {
     });
 
     it('should parse URL with branch and path', () => {
-      const result = provider.parseUrl('https://github.com/facebook/react/tree/main/packages/react');
+      const result = provider.parseUrl(
+        'https://github.com/facebook/react/tree/main/packages/react'
+      );
 
       expect(result.isValid).toBe(true);
       expect(result.owner).toBe('facebook');

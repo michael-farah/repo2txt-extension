@@ -92,7 +92,7 @@ test.describe('Dark Mode', () => {
 
     // Load a repository to test more components
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();
@@ -128,7 +128,7 @@ test.describe('Dark Mode', () => {
 
     // Load repository
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();

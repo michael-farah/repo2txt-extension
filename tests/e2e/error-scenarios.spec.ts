@@ -85,7 +85,7 @@ test.describe('Error Scenarios', () => {
   test('should handle empty file selection gracefully', async ({ page }) => {
     // Load a repository
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();
@@ -111,14 +111,16 @@ test.describe('Error Scenarios', () => {
     await generateButton.click();
 
     // Should show helpful error message - check for error dialog
-    await expect(page.getByRole('heading', { name: /Unable to Complete Request/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Unable to Complete Request/i })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByText(/No files selected/i)).toBeVisible();
   });
 
   test('should close error dialog when clicking close button', async ({ page }) => {
     // Trigger an error (no files selected)
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();
@@ -153,7 +155,7 @@ test.describe('Error Scenarios', () => {
   test('should handle Escape key to close error dialog', async ({ page }) => {
     // Trigger an error
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();

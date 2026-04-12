@@ -1,14 +1,14 @@
 {
   "name": "repo2txt",
   "private": true,
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "type": "module",
   "description": "Convert GitHub repositories or local directories to plain text for LLM prompts",
-  "author": "abinthomasonline",
+  "author": "Michael Farah",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/abinthomasonline/repo2txt.git"
+    "url": "https://github.com/michael-farah/repo2txt-extension.git"
   },
   "scripts": {
     "dev": "vite",
@@ -45,6 +45,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/chrome": "^0.1.40",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

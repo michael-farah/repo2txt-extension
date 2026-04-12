@@ -31,7 +31,9 @@ test.describe('Local Flow', () => {
     await page.waitForTimeout(1500); // Wait for provider to load
 
     // Verify instructions are shown (actual text from DirectoryPicker component)
-    await expect(page.getByText(/Select a directory from your device/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Select a directory from your device/i)).toBeVisible({
+      timeout: 5000,
+    });
     await expect(page.getByText(/Select Directory/i)).toBeVisible({ timeout: 5000 });
   });
 
@@ -65,7 +67,7 @@ test.describe('Local Flow', () => {
   test('should reset state when switching providers', async ({ page }) => {
     // Start with GitHub, load a repo
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();
@@ -92,7 +94,7 @@ test.describe('Local Flow', () => {
   test('should show error for no files selected', async ({ page }) => {
     // Switch to GitHub (or stay on it)
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();

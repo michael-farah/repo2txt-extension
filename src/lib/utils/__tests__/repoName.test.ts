@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   sanitizeFilename,
   extractGitHubRepoName,
-  extractGitLabRepoName,
-  extractAzureRepoName,
   extractLocalName,
   getDefaultFilename,
 } from '../repoName';
@@ -49,8 +47,12 @@ describe('repoName utilities', () => {
     });
 
     it('should extract repo name from URL with branch and path', () => {
-      expect(extractGitHubRepoName('https://github.com/facebook/react/tree/main/packages')).toBe('react');
-      expect(extractGitHubRepoName('https://github.com/microsoft/vscode/tree/main/src')).toBe('vscode');
+      expect(extractGitHubRepoName('https://github.com/facebook/react/tree/main/packages')).toBe(
+        'react'
+      );
+      expect(extractGitHubRepoName('https://github.com/microsoft/vscode/tree/main/src')).toBe(
+        'vscode'
+      );
     });
 
     it('should return default for invalid URLs', () => {
@@ -61,48 +63,6 @@ describe('repoName utilities', () => {
 
     it('should sanitize repo names with special characters', () => {
       expect(extractGitHubRepoName('https://github.com/user/repo:name')).toBe('repo-name');
-    });
-  });
-
-  describe('extractGitLabRepoName', () => {
-    it('should extract repo name from basic GitLab URL', () => {
-      expect(extractGitLabRepoName('https://gitlab.com/gitlab-org/gitlab')).toBe('gitlab');
-      expect(extractGitLabRepoName('https://gitlab.com/user/my-project')).toBe('my-project');
-    });
-
-    it('should extract repo name from URL with tree', () => {
-      expect(extractGitLabRepoName('https://gitlab.com/gitlab-org/gitlab-foss/-/tree/master')).toBe('gitlab-foss');
-      expect(extractGitLabRepoName('https://gitlab.com/user/project/-/tree/main/src')).toBe('project');
-    });
-
-    it('should extract repo name from nested groups', () => {
-      expect(extractGitLabRepoName('https://gitlab.com/group/subgroup/project')).toBe('project');
-    });
-
-    it('should return default for invalid URLs', () => {
-      expect(extractGitLabRepoName('invalid-url')).toBe('gitlab-repo');
-      expect(extractGitLabRepoName('')).toBe('gitlab-repo');
-    });
-  });
-
-  describe('extractAzureRepoName', () => {
-    it('should extract repo name from Azure DevOps URL (modern format)', () => {
-      expect(extractAzureRepoName('https://dev.azure.com/org/project/_git/repo')).toBe('repo');
-      expect(extractAzureRepoName('https://dev.azure.com/microsoft/TypeScript/_git/TypeScript')).toBe('TypeScript');
-    });
-
-    it('should extract repo name from Azure DevOps URL (legacy format)', () => {
-      expect(extractAzureRepoName('https://org.visualstudio.com/project/_git/repo')).toBe('repo');
-    });
-
-    it('should extract repo name from URL with path', () => {
-      expect(extractAzureRepoName('https://dev.azure.com/org/project/_git/repo?path=/src')).toBe('repo');
-    });
-
-    it('should return default for invalid URLs', () => {
-      expect(extractAzureRepoName('invalid-url')).toBe('azure-repo');
-      expect(extractAzureRepoName('')).toBe('azure-repo');
-      expect(extractAzureRepoName('https://dev.azure.com/org/project')).toBe('azure-repo');
     });
   });
 

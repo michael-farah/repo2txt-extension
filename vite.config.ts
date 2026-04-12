@@ -4,7 +4,7 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/repo2txt/',
+  base: './',
   plugins: [react()],
   resolve: {
     alias: {
@@ -19,10 +19,20 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'es2022',
+    target: 'chrome120',
     sourcemap: true,
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'content-scripts/github': path.resolve(__dirname, 'src/content-scripts/github.ts'),
+      },
       output: {
+        entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === 'content-scripts/github') {
+            return 'content-scripts/github.js';
+          }
+          return 'assets/[name]-[hash].js';
+        },
         manualChunks: {
           react: ['react', 'react-dom'],
           zustand: ['zustand'],

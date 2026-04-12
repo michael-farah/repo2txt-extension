@@ -31,7 +31,7 @@ git clone https://github.com/YOUR_USERNAME/repo2txt.git
 cd repo2txt
 
 # Add upstream remote
-git remote add upstream https://github.com/abinthomasonline/repo2txt.git
+git remote add upstream https://github.com/michael-farah/repo2txt-extension.git
 
 # Install dependencies
 npm install
@@ -152,6 +152,7 @@ class GitHubProvider extends BaseProvider {
 ```
 
 **Benefits:**
+
 - Easy to add new providers (GitLab, Bitbucket, etc.)
 - Consistent interface across all sources
 - Shared functionality in base class (error handling, retries, caching)
@@ -197,8 +198,8 @@ const useStore = create<AppState>()(
         // Computed selectors
         getSelectedNodes: () => {
           const { tree, selectedPaths } = get();
-          return tree.filter(n => selectedPaths.has(n.path));
-        }
+          return tree.filter((n) => selectedPaths.has(n.path));
+        },
       }),
       { name: 'repo2txt-store' }
     )
@@ -207,6 +208,7 @@ const useStore = create<AppState>()(
 ```
 
 **Benefits:**
+
 - Simple API with hooks
 - DevTools integration
 - Persistence support
@@ -259,6 +261,7 @@ function FileTree({ nodes }: { nodes: TreeNode[] }) {
 ```
 
 **Benefits:**
+
 - Constant memory usage regardless of tree size
 - Smooth scrolling
 - Only renders visible items + overscan
@@ -288,6 +291,7 @@ const loadProvider = async (type: ProviderType) => {
 ```
 
 **Bundle Impact:**
+
 - Main chunk: ~330KB
 - GitHub provider: ~50KB (loaded on demand)
 - Local provider: ~30KB (loaded on demand)
@@ -331,7 +335,7 @@ self.onmessage = async (event) => {
       const tokenCount = encode(file.content).length;
       self.postMessage({
         type: 'progress',
-        file: { ...file, tokenCount }
+        file: { ...file, tokenCount },
       });
     }
   }
@@ -339,6 +343,7 @@ self.onmessage = async (event) => {
 ```
 
 **Benefits:**
+
 - Non-blocking UI during tokenization
 - Progress updates for long operations
 - Better perceived performance
@@ -518,6 +523,7 @@ repo2txt/
 ### Unit Tests (Vitest + React Testing Library)
 
 **What to test:**
+
 - Pure functions (formatters, parsers, utilities)
 - React components in isolation
 - Provider methods
@@ -551,6 +557,7 @@ describe('Formatter', () => {
 ### Integration Tests
 
 **What to test:**
+
 - Provider + FileTree interactions
 - Filter + FileTree updates
 - Store + Component integration
@@ -573,11 +580,13 @@ describe('GitHub Provider Integration', () => {
 ### E2E Tests (Playwright)
 
 **What to test:**
+
 - Complete user workflows
 - Cross-browser compatibility
 - Real API interactions
 
 **Current Coverage:**
+
 - ✅ Dark mode (5 tests)
 - ✅ Error scenarios (8 tests)
 - ✅ GitHub flow (6 tests)
@@ -592,7 +601,7 @@ test('should complete full GitHub public repo flow', async ({ page }) => {
 
   // Enter URL
   const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-  await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+  await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
   // Load repo
   const loadButton = page.getByRole('button', { name: /Load Repository/i });
@@ -672,7 +681,7 @@ interface FileNode {
 }
 
 function filterNodes(nodes: FileNode[], predicate: (node: FileNode) => boolean): FileNode[] {
-  return nodes.filter(predicate).map(node => ({
+  return nodes.filter(predicate).map((node) => ({
     ...node,
     children: node.children ? filterNodes(node.children, predicate) : undefined,
   }));
@@ -805,6 +814,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `refactor`: Code refactoring
@@ -826,6 +836,7 @@ git commit -m "docs: update architecture documentation"
 ### Pull Request Process
 
 1. **Create Feature Branch**
+
    ```bash
    git checkout -b feature/your-feature
    ```
@@ -837,18 +848,21 @@ git commit -m "docs: update architecture documentation"
    - Run quality checks
 
 3. **Test Locally**
+
    ```bash
    npm run ci          # Type check + lint + unit tests
    npm run test:e2e    # E2E tests
    ```
 
 4. **Commit Changes**
+
    ```bash
    git add .
    git commit -m "feat(scope): your feature description"
    ```
 
 5. **Push to GitHub**
+
    ```bash
    git push origin feature/your-feature
    ```
@@ -896,7 +910,7 @@ DevTools integration is enabled in development:
 
 ```typescript
 // Inspect store in browser console
-window.__ZUSTAND_STORE__
+window.__ZUSTAND_STORE__;
 ```
 
 ### Vite Debug Mode
@@ -909,17 +923,21 @@ DEBUG=vite:* npm run dev
 ### Common Issues
 
 **Issue: E2E tests failing with rate limit**
+
 - Add GitHub token to `tests/test-config.ts`
 
 **Issue: Build fails with TypeScript errors**
+
 - Run `npm run typecheck` to see all errors
 - Use `npm run build:check` for strict type checking
 
 **Issue: Virtual scrolling not working**
+
 - Check parent container has fixed height
 - Verify `flattenTree` function is memoized
 
 **Issue: Web Worker not loading**
+
 - Check worker file path in Vite config
 - Ensure worker is imported with `?worker` suffix
 
@@ -934,9 +952,9 @@ DEBUG=vite:* npm run dev
 
 ## 💬 Questions?
 
-- **GitHub Discussions**: [Ask questions](https://github.com/abinthomasonline/repo2txt/discussions)
-- **Issues**: [Report bugs](https://github.com/abinthomasonline/repo2txt/issues)
-- **Email**: abinthomasonline@gmail.com
+- **GitHub Discussions**: [Ask questions](https://github.com/michael-farah/repo2txt-extension/discussions)
+- **Issues**: [Report bugs](https://github.com/michael-farah/repo2txt-extension/issues)
+- **Email**: michael.farah@outlook.com
 
 ---
 

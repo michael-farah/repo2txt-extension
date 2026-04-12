@@ -73,7 +73,7 @@ describe('GitHubUrlInput', () => {
 
     const input = screen.getByPlaceholderText('https://github.com/facebook/react');
 
-    await userEvent.type(input, 'https://gitlab.com/owner/repo');
+    await userEvent.type(input, 'invalid-url');
 
     await waitFor(() => {
       expect(screen.getByText('Invalid GitHub URL format')).toBeInTheDocument();
@@ -124,7 +124,9 @@ describe('GitHubUrlInput', () => {
     const onUrlChange = vi.fn();
     render(<GitHubUrlInput onUrlChange={onUrlChange} />);
 
-    const input = screen.getByPlaceholderText('https://github.com/facebook/react') as HTMLInputElement;
+    const input = screen.getByPlaceholderText(
+      'https://github.com/facebook/react'
+    ) as HTMLInputElement;
 
     await userEvent.type(input, 'https://github.com/facebook/react');
 

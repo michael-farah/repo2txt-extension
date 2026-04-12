@@ -7,8 +7,10 @@ import { useState } from 'react';
 import { DirectoryPicker } from './DirectoryPicker';
 import { ZipUploader } from './ZipUploader';
 
+import type { FileSystemDirectoryHandle } from '@/types';
+
 interface LocalFormProps {
-  onDirectorySelected?: (files: FileList) => void;
+  onDirectorySelected?: (files: FileList | FileSystemDirectoryHandle) => void;
   onZipSelected?: (file: File) => void;
   onTabChange?: (tab: TabType) => void;
   disabled?: boolean;
@@ -16,7 +18,12 @@ interface LocalFormProps {
 
 type TabType = 'directory' | 'zip';
 
-export function LocalForm({ onDirectorySelected, onZipSelected, onTabChange, disabled }: LocalFormProps) {
+export function LocalForm({
+  onDirectorySelected,
+  onZipSelected,
+  onTabChange,
+  disabled,
+}: LocalFormProps) {
   const [activeTab, setActiveTab] = useState<TabType>('directory');
 
   const handleTabChange = (tab: TabType) => {
@@ -42,7 +49,12 @@ export function LocalForm({ onDirectorySelected, onZipSelected, onTabChange, dis
             }
           `}
         >
-          <svg className="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="inline w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -64,7 +76,12 @@ export function LocalForm({ onDirectorySelected, onZipSelected, onTabChange, dis
             }
           `}
         >
-          <svg className="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="inline w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

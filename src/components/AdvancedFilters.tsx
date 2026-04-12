@@ -41,40 +41,33 @@ export function AdvancedFilters({
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-h-[44px] touch-manipulation"
+        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-h-[32px] touch-manipulation"
       >
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Advanced Filters
           </h3>
-          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-            Extension & Gitignore
-          </span>
+          <span className="text-[9px] text-gray-500 dark:text-gray-400">Extension & Gitignore</span>
         </div>
         <svg
-          className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
             isExpanded ? 'rotate-180' : ''
           }`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {/* Content */}
       {isExpanded && (
-        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 gap-3">
             {/* Extension Filter */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
                 File Extensions
               </h4>
               <ExtensionFilter
@@ -86,8 +79,8 @@ export function AdvancedFilters({
             </div>
 
             {/* Gitignore Patterns */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
                 Gitignore Patterns
               </h4>
               <GitIgnoreEditor

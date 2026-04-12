@@ -7,6 +7,7 @@ import { BaseProvider } from '@/lib/providers/BaseProvider';
 import { ProviderError, ErrorCode } from '@/lib/providers/types';
 import type { ParsedRepoInfo } from '@/lib/providers/types';
 import type { ProviderType, FileNode, FetchOptions, FileContent } from '@/types';
+import { useStore } from '@/store';
 
 interface GitHubReferences {
   branches: string[];
@@ -103,6 +104,14 @@ export class GitHubProvider extends BaseProvider {
       url,
     };
 
+    const cacheKey = `${url}${options?.branch ? `#${options.branch}` : ''}`;
+    const { getCachedRepo, setCachedRepo } = useStore.getState();
+    const cached = getCachedRepo(cacheKey);
+
+    if (cached) {
+      return cached.data;
+    }
+
     try {
       // Resolve branch/path if URL contains tree segment
       let ref = options?.branch || parsed.branch || '';
@@ -120,6 +129,8 @@ export class GitHubProvider extends BaseProvider {
 
       // Fetch the complete tree
       const tree = await this.fetchTreeRecursive(owner, repo, sha);
+
+      setCachedRepo(cacheKey, tree, []);
 
       return tree;
     } catch (error) {
@@ -228,6 +239,10 @@ export class GitHubProvider extends BaseProvider {
     const response = await this.fetchWithRetry(url, { headers });
     const data = await response.json();
 
+    if (data.truncated) {
+      return this.fetchTreeManualRecursive(owner, repo, sha, '');
+    }
+
     return data.tree.map(
       (item: { path: string; type: string; url: string; size?: number; sha?: string }) => ({
         path: item.path,
@@ -238,6 +253,54 @@ export class GitHubProvider extends BaseProvider {
         sha: item.sha,
       })
     );
+  }
+
+  private async fetchTreeManualRecursive(
+    owner: string,
+    repo: string,
+    sha: string,
+    basePath: string
+  ): Promise<FileNode[]> {
+    const headers = this.buildGitHubHeaders({
+      Accept: 'application/vnd.github+json',
+    });
+
+    const url = `${GitHubProvider.API_BASE}/repos/${owner}/${repo}/git/trees/${sha}`;
+    const response = await this.fetchWithRetry(url, { headers });
+    const data = await response.json();
+
+    const allNodes: FileNode[] = [];
+    const treeTasks: (() => Promise<FileNode[]>)[] = [];
+
+    for (const item of data.tree) {
+      const fullPath = basePath ? `${basePath}/${item.path}` : item.path;
+
+      allNodes.push({
+        path: fullPath,
+        type: item.type === 'blob' ? 'blob' : 'tree',
+        url: item.url,
+        urlType: 'api' as const,
+        size: item.size,
+        sha: item.sha,
+      });
+
+      if (item.type === 'tree' && item.sha) {
+        treeTasks.push(() =>
+          this.fetchTreeManualRecursive(owner, repo, item.sha as string, fullPath)
+        );
+      }
+    }
+
+    const chunkSize = 5;
+    for (let i = 0; i < treeTasks.length; i += chunkSize) {
+      const chunk = treeTasks.slice(i, i + chunkSize);
+      const results = await Promise.all(chunk.map((task) => task()));
+      for (const subNodes of results) {
+        allNodes.push(...subNodes);
+      }
+    }
+
+    return allNodes;
   }
 
   /**
@@ -291,8 +354,11 @@ export class GitHubProvider extends BaseProvider {
       ...additionalHeaders,
     };
 
-    if (this.credentials?.token) {
-      headers['Authorization'] = `token ${this.credentials.token}`;
+    const { pat } = useStore.getState();
+    const token = pat || this.credentials?.token;
+
+    if (token) {
+      headers['Authorization'] = `token ${token}`;
     }
 
     return headers;
@@ -323,7 +389,10 @@ Unauthenticated requests are limited to 60/hour. Please add a GitHub Personal Ac
 
 Click the GitHub icon in the authentication section above to add a token.`,
           () => {
-            window.open('https://github.com/settings/tokens/new?description=repo2txt&scopes=repo', '_blank');
+            window.open(
+              'https://github.com/settings/tokens/new?description=repo2txt&scopes=repo',
+              '_blank'
+            );
           }
         );
       }

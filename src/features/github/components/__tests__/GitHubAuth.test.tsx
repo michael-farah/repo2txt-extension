@@ -28,7 +28,7 @@ describe('GitHubAuth', () => {
   it('should render token input field', () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     expect(input).toBeInTheDocument();
   });
 
@@ -41,14 +41,14 @@ describe('GitHubAuth', () => {
   it('should render password type input', () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     expect(input).toHaveAttribute('type', 'password');
   });
 
   it('should show placeholder text', () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     expect(input).toBeInTheDocument();
   });
 
@@ -58,15 +58,15 @@ describe('GitHubAuth', () => {
     const toggleButton = screen.getByLabelText('Toggle token information');
 
     // Info should be hidden initially
-    expect(screen.queryByText(/A token is required for private repositories/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Required for private repos/i)).not.toBeInTheDocument();
 
     // Click to show info
     await userEvent.click(toggleButton);
-    expect(screen.getByText(/A token is required for private repositories/i)).toBeInTheDocument();
+    expect(screen.getByText(/Required for private repos/i)).toBeInTheDocument();
 
     // Click to hide info
     await userEvent.click(toggleButton);
-    expect(screen.queryByText(/A token is required for private repositories/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Required for private repos/i)).not.toBeInTheDocument();
   });
 
   it('should display token creation link in info panel', async () => {
@@ -75,8 +75,11 @@ describe('GitHubAuth', () => {
     const toggleButton = screen.getByLabelText('Toggle token information');
     await userEvent.click(toggleButton);
 
-    const link = screen.getByText('Get your token');
-    expect(link).toHaveAttribute('href', 'https://github.com/settings/tokens/new?description=repo2txt&scopes=repo');
+    const link = screen.getByText('Get token');
+    expect(link).toHaveAttribute(
+      'href',
+      'https://github.com/settings/tokens/new?description=repo2txt&scopes=repo'
+    );
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
@@ -84,7 +87,7 @@ describe('GitHubAuth', () => {
   it('should save token to sessionStorage when entered', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     const token = 'ghp_testtoken123';
 
     await userEvent.type(input, token);
@@ -95,7 +98,7 @@ describe('GitHubAuth', () => {
   it('should update store when token is entered', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     const token = 'ghp_testtoken123';
 
     await userEvent.type(input, token);
@@ -111,7 +114,7 @@ describe('GitHubAuth', () => {
 
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
     expect(input.value).toBe(savedToken);
     expect(mockSetCredentials).toHaveBeenCalledWith({ token: savedToken });
   });
@@ -119,7 +122,7 @@ describe('GitHubAuth', () => {
   it('should show clear button when token is entered', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
 
     // Clear button should not be visible initially
     expect(screen.queryByTitle('Clear token')).not.toBeInTheDocument();
@@ -135,7 +138,7 @@ describe('GitHubAuth', () => {
   it('should clear token when clear button is clicked', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
     const token = 'ghp_testtoken123';
 
     await userEvent.type(input, token);
@@ -155,23 +158,23 @@ describe('GitHubAuth', () => {
   it('should show success message when token is saved', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
 
     // Success message should not be visible initially
-    expect(screen.queryByText('Token saved (session only)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Token saved/i)).not.toBeInTheDocument();
 
     await userEvent.type(input, 'ghp_testtoken123');
 
     // Success message should appear
     await waitFor(() => {
-      expect(screen.getByText('Token saved (session only)')).toBeInTheDocument();
+      expect(screen.getByText(/Token saved/i)).toBeInTheDocument();
     });
   });
 
   it('should remove token from sessionStorage when cleared', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     await userEvent.type(input, 'ghp_testtoken123');
 
     expect(sessionStorage.getItem('github_token')).toBe('ghp_testtoken123');
@@ -184,7 +187,7 @@ describe('GitHubAuth', () => {
   it('should update credentials in store when token is cleared', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     await userEvent.type(input, 'ghp_testtoken123');
 
     mockSetCredentials.mockClear();
@@ -199,29 +202,29 @@ describe('GitHubAuth', () => {
   it('should have proper accessibility attributes', () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
     expect(input).toHaveAttribute('id', 'github-token');
   });
 
-  it('should display security message in info panel', async () => {
+  it('should display info panel content when toggled', async () => {
     render(<GitHubAuth />);
 
     const toggleButton = screen.getByLabelText('Toggle token information');
     await userEvent.click(toggleButton);
 
-    expect(screen.getByText(/Your token is stored securely in your browser session/i)).toBeInTheDocument();
+    expect(screen.getByText(/Required for private repos/i)).toBeInTheDocument();
   });
 
   it('should not show success message when token is empty', () => {
     render(<GitHubAuth />);
 
-    expect(screen.queryByText('Token saved (session only)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Token saved/i)).not.toBeInTheDocument();
   });
 
   it('should handle rapid token changes', async () => {
     render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const input = screen.getByPlaceholderText('ghp_...');
 
     await userEvent.type(input, 'ghp_token1');
     await userEvent.clear(input);

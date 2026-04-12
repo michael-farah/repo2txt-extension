@@ -168,7 +168,7 @@ export class FileTree {
 
     // Handle root-level patterns (starting with /)
     if (pattern.startsWith('/')) {
-      regexPattern = '^' + regexPattern.slice(2); // Remove leading / and escaped slash
+      regexPattern = '^' + regexPattern.slice(1);
     } else {
       // Pattern can match anywhere in path
       regexPattern = '(^|/)' + regexPattern;

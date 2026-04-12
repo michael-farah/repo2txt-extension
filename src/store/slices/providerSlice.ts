@@ -4,6 +4,7 @@ import type { ProviderType, ProviderCredentials, RepoMetadata } from '@/types';
 export interface ProviderSlice {
   providerType: ProviderType | null;
   credentials: ProviderCredentials | null;
+  pat: string | null;
   repoMetadata: RepoMetadata | null;
   repoUrl: string;
   isLoading: boolean;
@@ -11,6 +12,8 @@ export interface ProviderSlice {
 
   setProviderType: (type: ProviderType) => void;
   setCredentials: (credentials: ProviderCredentials) => void;
+  setPAT: (pat: string | null) => void;
+  clearPAT: () => void;
   setRepoMetadata: (metadata: RepoMetadata) => void;
   setRepoUrl: (url: string) => void;
   setLoading: (isLoading: boolean) => void;
@@ -21,6 +24,7 @@ export interface ProviderSlice {
 const initialState = {
   providerType: null,
   credentials: null,
+  pat: null,
   repoMetadata: null,
   repoUrl: '',
   isLoading: false,
@@ -34,11 +38,12 @@ export const createProviderSlice: StateCreator<ProviderSlice> = (set) => ({
 
   setCredentials: (credentials: ProviderCredentials) => {
     set({ credentials });
-    // Store token securely (sessionStorage for now, can add encryption later)
-    if (credentials.token) {
-      sessionStorage.setItem('provider_token', credentials.token);
-    }
+    // We no longer use sessionStorage here, persistence is handled by Zustand persist middleware
   },
+
+  setPAT: (pat: string | null) => set({ pat }),
+  
+  clearPAT: () => set({ pat: null }),
 
   setRepoMetadata: (metadata: RepoMetadata) => set({ repoMetadata: metadata }),
 
@@ -49,7 +54,6 @@ export const createProviderSlice: StateCreator<ProviderSlice> = (set) => ({
   setError: (error: string | null) => set({ error }),
 
   reset: () => {
-    sessionStorage.removeItem('provider_token');
     set(initialState);
   },
 });

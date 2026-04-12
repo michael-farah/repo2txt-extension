@@ -15,7 +15,11 @@ interface OutputPanelProps {
   repoName?: string;
 }
 
-export function OutputPanel({ output, isLoading = false, repoName = 'repo-export' }: OutputPanelProps) {
+export function OutputPanel({
+  output,
+  isLoading = false,
+  repoName = 'repo-export',
+}: OutputPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<'txt' | 'md' | 'zip'>('txt');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -93,9 +97,7 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
       <div className="flex items-center justify-center h-64 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Loading files...
-          </p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading files...</p>
         </div>
       </div>
     );
@@ -127,34 +129,37 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
   const fullText = `${output.directoryTree}\n\n${output.fileContents}`;
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-2">
       {/* Stats */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-3 sm:gap-0">
-        <div className="flex gap-4 sm:gap-6">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Lines</p>
-            <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {output.lineCount.toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Tokens</p>
-            <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {output.tokenCount.toLocaleString()}
-            </p>
+      <div className="flex flex-col items-start justify-between p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-2">
+        <div className="flex gap-4 w-full justify-between">
+          <div className="flex gap-4">
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Lines</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {output.lineCount.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Tokens</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {output.tokenCount.toLocaleString()}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex gap-1.5 w-full">
           <Button
             variant="secondary"
             size="sm"
             onClick={handleCopy}
             title="Copy to clipboard"
+            className="flex-1 px-2 py-1.5 h-auto text-xs"
           >
             {copied ? (
               <>
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -165,7 +170,12 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-3.5 h-3.5 mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -178,11 +188,11 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
             )}
           </Button>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 flex-1">
             <select
               value={downloadFormat}
               onChange={(e) => setDownloadFormat(e.target.value as 'txt' | 'md' | 'zip')}
-              className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+              className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 py-1 text-xs text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               title="Select download format"
             >
               <option value="txt">TXT</option>
@@ -196,15 +206,21 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
               onClick={handleDownload}
               disabled={isDownloading}
               title={`Download as ${downloadFormat.toUpperCase()}`}
+              className="flex-1 px-2 py-1.5 h-auto text-xs"
             >
               {isDownloading ? (
                 <>
-                  <div className="w-4 h-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Downloading...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3.5 h-3.5 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -221,19 +237,15 @@ export function OutputPanel({ output, isLoading = false, repoName = 'repo-export
       </div>
 
       {/* Per-file statistics */}
-      {output.files && output.files.length > 0 && (
-        <FileStats files={output.files} />
-      )}
+      {output.files && output.files.length > 0 && <FileStats files={output.files} />}
 
       {/* Output preview */}
       <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <div className="p-4 border-b border-gray-300 dark:border-gray-700">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Output Preview
-          </h3>
+        <div className="p-2 border-b border-gray-300 dark:border-gray-700">
+          <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100">Output Preview</h3>
         </div>
-        <div className="p-4 max-h-96 overflow-auto">
-          <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+        <div className="p-2 max-h-48 overflow-auto">
+          <pre className="text-[10px] font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
             {fullText}
           </pre>
         </div>

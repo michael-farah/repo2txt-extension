@@ -59,14 +59,6 @@ export function getProviderForUrl(url: string): IProvider | null {
     if (isProviderRegistered('github')) {
       return createProvider('github');
     }
-  } else if (url.includes('gitlab.com') || url.includes('gitlab')) {
-    if (isProviderRegistered('gitlab')) {
-      return createProvider('gitlab');
-    }
-  } else if (url.includes('dev.azure.com') || url.includes('visualstudio.com')) {
-    if (isProviderRegistered('azure')) {
-      return createProvider('azure');
-    }
   }
 
   return null;

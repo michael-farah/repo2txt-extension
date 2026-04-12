@@ -21,7 +21,7 @@ test.describe('GitHub Flow', () => {
 
     // Step 2: Enter GitHub URL
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     // Wait for validation
     await expect(page.getByText('Valid GitHub URL')).toBeVisible();
@@ -104,7 +104,9 @@ test.describe('GitHub Flow', () => {
     await page.waitForTimeout(300); // Wait for hints to expand
 
     // Verify hints are shown - check for the list container
-    const hintsSection = page.locator('div[class*="bg-blue"]').filter({ hasText: 'Supported URL formats:' });
+    const hintsSection = page
+      .locator('div[class*="bg-blue"]')
+      .filter({ hasText: 'Supported URL formats:' });
     await expect(hintsSection).toBeVisible();
 
     // Click again to hide
@@ -116,7 +118,7 @@ test.describe('GitHub Flow', () => {
   test('should handle file tree interactions', async ({ page }) => {
     // Load a repository
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();
@@ -144,7 +146,7 @@ test.describe('GitHub Flow', () => {
   test('should filter files by extension', async ({ page }) => {
     // Load a repository
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');
-    await urlInput.fill('https://github.com/abinthomasonline/repo2txt');
+    await urlInput.fill('https://github.com/michael-farah/repo2txt-extension');
 
     const loadButton = page.getByRole('button', { name: /Load Repository/i });
     await loadButton.click();

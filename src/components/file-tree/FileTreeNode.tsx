@@ -39,7 +39,6 @@ export function FileTreeNode({
     }
   }, [isDirectory, node.path, onToggle]);
 
-  // Don't render if not visible and showExcluded is false
   if (!isVisible && !showExcluded) {
     return null;
   }
@@ -126,9 +125,7 @@ export function FileTreeNode({
         />
       )}
       {/* Spacer for excluded files to maintain alignment */}
-      {isExcluded && (
-        <div className="w-4 h-4 flex-shrink-0" />
-      )}
+      {isExcluded && <div className="w-4 h-4 flex-shrink-0" />}
 
       {/* Icon */}
       <div className="flex-shrink-0">{getFileIcon()}</div>
