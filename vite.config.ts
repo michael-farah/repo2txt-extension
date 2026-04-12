@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// https://vite.dev/config/
 export default defineConfig({
   base: './',
   plugins: [react()],
@@ -25,11 +24,15 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         'content-scripts/github': path.resolve(__dirname, 'src/content-scripts/github.ts'),
+        'background/index': path.resolve(__dirname, 'src/background/index.ts'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'content-scripts/github') {
             return 'content-scripts/github.js';
+          }
+          if (chunkInfo.name === 'background/index') {
+            return 'background/index.js';
           }
           return 'assets/[name]-[hash].js';
         },

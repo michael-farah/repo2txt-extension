@@ -59,6 +59,24 @@ function App() {
   const shouldAutoExpandRoot = useRef(false);
   const outputRef = useRef<HTMLDivElement>(null);
 
+  // Read pending repo URL from background service worker (set via content script)
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+      chrome.storage.session
+        .get('pendingRepoUrl')
+        .then((result) => {
+          if (result.pendingRepoUrl) {
+            setRepoUrl(result.pendingRepoUrl);
+            setProviderType('github');
+            chrome.storage.session.remove('pendingRepoUrl');
+          }
+        })
+        .catch(() => {
+          // Session storage unavailable — user can paste URL manually
+        });
+    }
+  }, [setRepoUrl, setProviderType]);
+
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
     if (nodes.length === 0) return [];

@@ -1,8 +1,3 @@
-/**
- * GitHub Content Script for repo2txt extension
- * Injects "Convert to Text" button in repository header
- */
-
 interface GitHubRepoInfo {
   owner: string;
   repo: string;
@@ -279,12 +274,31 @@ function injectButton(): void {
   console.log('repo2txt: Button injected successfully');
 }
 
-/**
- * Initialize content script
- */
 let observer: MutationObserver | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function handleNavigationChange(): void {
+  const existingBtn = document.querySelector('.repo2txt-convert-btn');
+  if (existingBtn) {
+    existingBtn.remove();
+  }
+  setTimeout(injectButton, 500);
+}
+
+function disconnectObserver(): void {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+}
 
 function init(): void {
+  disconnectObserver();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(injectButton, 500);
@@ -298,14 +312,15 @@ function init(): void {
     const url = location.href;
     if (url !== lastUrl) {
       lastUrl = url;
-      const existingBtn = document.querySelector('.repo2txt-convert-btn');
-      if (existingBtn) {
-        existingBtn.remove();
-      }
-      setTimeout(injectButton, 500);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(handleNavigationChange, 300);
     }
   });
   observer.observe(document.body, { subtree: true, childList: true });
 }
 
 init();
+
+// Disconnect on GitHub SPA navigation to prevent observer stacking
+window.addEventListener('yt-navigate-start', disconnectObserver);
+window.addEventListener('beforeunload', disconnectObserver);

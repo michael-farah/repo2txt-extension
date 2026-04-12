@@ -46,10 +46,12 @@ self.onmessage = (event: MessageEvent<TokenizeRequest>) => {
       const total = files.length;
       const results: Array<{ path: string; tokenCount: number; lineCount: number }> = [];
 
+      const PROGRESS_INTERVAL = 100;
+      let lastProgressTime = 0;
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // Tokenize content
         const tokenCount = encode(file.content).length;
         const lineCount = file.content.split('\n').length;
 
@@ -59,14 +61,17 @@ self.onmessage = (event: MessageEvent<TokenizeRequest>) => {
           lineCount,
         });
 
-        // Send progress update
-        const progress: ProgressResponse = {
-          id,
-          progress: ((i + 1) / total) * 100,
-          current: i + 1,
-          total,
-        };
-        self.postMessage(progress);
+        const now = Date.now();
+        if (i % PROGRESS_INTERVAL === 0 || i === total - 1 || now - lastProgressTime >= 100) {
+          lastProgressTime = now;
+          const progress: ProgressResponse = {
+            id,
+            progress: ((i + 1) / total) * 100,
+            current: i + 1,
+            total,
+          };
+          self.postMessage(progress);
+        }
       }
 
       // Calculate total tokens
