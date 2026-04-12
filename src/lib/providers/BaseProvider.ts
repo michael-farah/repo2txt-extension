@@ -79,34 +79,21 @@ export abstract class BaseProvider implements IProvider {
     }
   }
 
-  /**
-   * Fetch multiple files with concurrency control
-   */
   async *fetchMultiple(nodes: FileNode[]): AsyncGenerator<FileContent, void, unknown> {
-    const queue = [...nodes];
-    const inProgress = new Map<Promise<{ content: FileContent; promise: Promise<FileContent> }>, Promise<FileContent>>();
+    const { maxConcurrent, delayMs } = this.rateLimiter;
 
-    while (queue.length > 0 || inProgress.size > 0) {
-      // Start new fetches up to max concurrent
-      while (queue.length > 0 && inProgress.size < this.rateLimiter.maxConcurrent) {
-        const node = queue.shift()!;
-        const promise = this.fetchFile(node);
-        // Wrap promise to include itself for tracking
-        const wrappedPromise = promise.then(content => ({ content, promise }));
-        inProgress.set(wrappedPromise, promise);
+    for (let i = 0; i < nodes.length; i += maxConcurrent) {
+      const chunk = nodes.slice(i, i + maxConcurrent);
+      const results = await Promise.allSettled(chunk.map((node) => this.fetchFile(node)));
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          yield result.value;
+        }
       }
 
-      // Wait for at least one to complete
-      if (inProgress.size > 0) {
-        const { content, promise } = await Promise.race(Array.from(inProgress.keys()));
-        // Remove the completed promise
-        for (const [wrapped, orig] of inProgress) {
-          if (orig === promise) {
-            inProgress.delete(wrapped);
-            break;
-          }
-        }
-        yield content;
+      if (i + maxConcurrent < nodes.length) {
+        await this.delay(delayMs);
       }
     }
   }

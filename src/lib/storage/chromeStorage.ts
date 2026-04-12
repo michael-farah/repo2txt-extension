@@ -9,11 +9,9 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
 
   let rawKey: string | null;
   if (isChromeExtension) {
-    rawKey = await new Promise<string | null>((resolve) => {
-      (storage as chrome.storage.LocalStorageArea).get([STORAGE_KEY_ID], (result) => {
-        resolve(result[STORAGE_KEY_ID] || null);
-      });
-    });
+    // MV3: use Promise-based chrome.storage API
+    const result = await (storage as chrome.storage.LocalStorageArea).get([STORAGE_KEY_ID]);
+    rawKey = (result as any)[STORAGE_KEY_ID] ?? null;
   } else {
     rawKey = (storage as Storage).getItem(STORAGE_KEY_ID);
   }
@@ -23,11 +21,8 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
     rawKey = Array.from(keyBytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
     if (isChromeExtension) {
-      await new Promise<void>((resolve) => {
-        (storage as chrome.storage.LocalStorageArea).set({ [STORAGE_KEY_ID]: rawKey }, () => {
-          resolve();
-        });
-      });
+      // MV3: promise-based set
+      await (storage as chrome.storage.LocalStorageArea).set({ [STORAGE_KEY_ID]: rawKey });
     } else {
       (storage as Storage).setItem(STORAGE_KEY_ID, rawKey);
     }
@@ -96,11 +91,9 @@ export const chromeStorage: StateStorage = {
     let value: string | null = null;
 
     if (isChromeExtension) {
-      value = await new Promise((resolve) => {
-        chrome.storage.local.get([name], (result) => {
-          resolve(result[name] || null);
-        });
-      });
+      // MV3: use Promise-based get
+      const result = await (chrome.storage.local as any).get([name]);
+      value = (result as any)[name] ?? null;
     } else {
       value = localStorage.getItem(name);
     }
@@ -120,11 +113,7 @@ export const chromeStorage: StateStorage = {
     }
 
     if (isChromeExtension) {
-      return new Promise((resolve) => {
-        chrome.storage.local.set({ [name]: finalValue }, () => {
-          resolve();
-        });
-      });
+      await (chrome.storage.local as any).set({ [name]: finalValue });
     } else {
       localStorage.setItem(name, finalValue);
     }
@@ -132,11 +121,7 @@ export const chromeStorage: StateStorage = {
 
   removeItem: async (name: string): Promise<void> => {
     if (isChromeExtension) {
-      return new Promise((resolve) => {
-        chrome.storage.local.remove([name], () => {
-          resolve();
-        });
-      });
+      await (chrome.storage.local as any).remove([name]);
     } else {
       localStorage.removeItem(name);
     }
