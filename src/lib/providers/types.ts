@@ -1,8 +1,3 @@
-/**
- * Provider types and interfaces for repo2txt v2.0
- * Defines the contract that all data source providers must implement
- */
-
 import type {
   ProviderType,
   ProviderCredentials,

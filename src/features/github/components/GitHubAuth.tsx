@@ -82,7 +82,7 @@ export function GitHubAuth() {
             Required for private repos & higher rate limits.
           </p>
           <a
-            href="https://github.com/settings/tokens/new?description=repo2txt&scopes=repo"
+            href="https://github.com/settings/tokens/new?description=repo2txt-extension&scopes=repo"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"

@@ -78,7 +78,7 @@ describe('GitHubAuth', () => {
     const link = screen.getByText('Get token');
     expect(link).toHaveAttribute(
       'href',
-      'https://github.com/settings/tokens/new?description=repo2txt&scopes=repo'
+      'https://github.com/settings/tokens/new?description=repo2txt-extension&scopes=repo'
     );
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');

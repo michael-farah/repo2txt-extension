@@ -1,7 +1,3 @@
-/**
- * Core type definitions for repo2txt v2.0
- */
-
 export type ProviderType = 'github' | 'local';
 
 export type Theme = 'light' | 'dark' | 'system';

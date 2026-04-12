@@ -390,7 +390,7 @@ Unauthenticated requests are limited to 60/hour. Please add a GitHub Personal Ac
 Click the GitHub icon in the authentication section above to add a token.`,
           () => {
             window.open(
-              'https://github.com/settings/tokens/new?description=repo2txt&scopes=repo',
+              'https://github.com/settings/tokens/new?description=repo2txt-extension&scopes=repo',
               '_blank'
             );
           }
