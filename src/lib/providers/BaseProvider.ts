@@ -93,7 +93,7 @@ export abstract class BaseProvider implements IProvider {
       }
 
       if (i + maxConcurrent < nodes.length) {
-        await this.delay(delayMs);
+        if (delayMs) await this.delay(delayMs);
       }
     }
   }

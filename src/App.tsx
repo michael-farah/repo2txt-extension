@@ -66,7 +66,7 @@ function App() {
         .get('pendingRepoUrl')
         .then((result) => {
           if (result.pendingRepoUrl) {
-            setRepoUrl(result.pendingRepoUrl);
+            setRepoUrl(result.pendingRepoUrl as string);
             setProviderType('github');
             chrome.storage.session.remove('pendingRepoUrl');
           }
@@ -211,7 +211,7 @@ function App() {
       if (isHandle) {
         await provider.initialize({ source: 'directory', directoryHandle: filesOrHandle });
       } else {
-        await provider.initialize({ source: 'directory', files: filesOrHandle });
+        await provider.initialize({ source: 'directory', files: filesOrHandle as FileList });
       }
 
       // Set flag to auto-expand root after tree is built

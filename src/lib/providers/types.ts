@@ -105,27 +105,36 @@ export interface RateLimiterConfig {
  * Provider error with user-friendly messages
  */
 export class ProviderError extends Error {
+  code: string;
+  userMessage: string;
+  recovery?: () => void;
+
   constructor(
     message: string,
-    public code: string,
-    public userMessage: string,
-    public recovery?: () => void
+    code: string,
+    userMessage: string,
+    recovery?: () => void
   ) {
     super(message);
     this.name = 'ProviderError';
+    this.code = code;
+    this.userMessage = userMessage;
+    this.recovery = recovery;
   }
 }
 
 /**
  * Common error codes
  */
-export enum ErrorCode {
-  INVALID_URL = 'INVALID_URL',
-  AUTH_REQUIRED = 'AUTH_REQUIRED',
-  AUTH_FAILED = 'AUTH_FAILED',
-  NOT_FOUND = 'NOT_FOUND',
-  RATE_LIMITED = 'RATE_LIMITED',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  PARSE_ERROR = 'PARSE_ERROR',
-  UNKNOWN = 'UNKNOWN',
-}
+export const ErrorCode = {
+  INVALID_URL: 'INVALID_URL',
+  AUTH_REQUIRED: 'AUTH_REQUIRED',
+  AUTH_FAILED: 'AUTH_FAILED',
+  NOT_FOUND: 'NOT_FOUND',
+  RATE_LIMITED: 'RATE_LIMITED',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  PARSE_ERROR: 'PARSE_ERROR',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];

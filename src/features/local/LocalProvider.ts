@@ -118,7 +118,7 @@ export class LocalProvider extends BaseProvider {
   /**
    * Fetch tree from local files
    */
-  async fetchTree(): Promise<FileNode[]> {
+  async fetchTree(_url?: string, _options?: any): Promise<FileNode[]> {
     if (!this.options) {
       throw new ProviderError(
         'Provider not initialized',
@@ -135,7 +135,7 @@ export class LocalProvider extends BaseProvider {
         nodes.push({
           path,
           type: 'blob',
-          size: fileOrHandle.size,
+          size: 'size' in fileOrHandle ? fileOrHandle.size : undefined,
           url: path, // Use path as URL for local files
           urlType: 'directory',
         });
@@ -172,9 +172,10 @@ export class LocalProvider extends BaseProvider {
         );
       }
 
-      if (file.kind === 'file' && typeof file.getFile === 'function') {
+      let actualFile: File;
+      if ('kind' in file && file.kind === 'file' && 'getFile' in file && typeof file.getFile === 'function') {
         try {
-          file = await file.getFile();
+          actualFile = await file.getFile();
         } catch {
           throw new ProviderError(
             `Permission denied or file unreadable: ${node.path}`,
@@ -182,9 +183,11 @@ export class LocalProvider extends BaseProvider {
             'Could not read file. Please ensure you have granted permission.'
           );
         }
+      } else {
+        actualFile = file as File;
       }
 
-      const text = await this.readFileAsText(file);
+      const text = await this.readFileAsText(actualFile);
       return {
         path: node.path,
         text,
