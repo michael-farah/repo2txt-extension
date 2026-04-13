@@ -30,6 +30,7 @@
     "ci": "npm run typecheck && npm run lint && npm run test:unit"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.18",
     "clsx": "^2.1.1",
     "gpt-tokenizer": "^3.4.0",
     "jszip": "^3.10.1",
@@ -41,7 +42,6 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.58.2",
-    "@tanstack/react-virtual": "^3.13.18",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
