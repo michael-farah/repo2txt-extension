@@ -16,8 +16,6 @@ This Chrome extension is a fork of [repo2txt](https://github.com/abinthomasonlin
 - **GitHub** - Public and private repositories with token support
 - **Local Files** - Directory picker for your local projects
 - **Zip Upload** - Drag & drop zip files
-- **GitLab** (Beta) - GitLab repository support
-- **Azure DevOps** (Beta) - Azure Repos integration
 
 ### 🎯 Smart Filtering
 
