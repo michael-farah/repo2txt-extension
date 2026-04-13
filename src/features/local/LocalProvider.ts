@@ -118,7 +118,11 @@ export class LocalProvider extends BaseProvider {
   /**
    * Fetch tree from local files
    */
-  async fetchTree(_url?: string, _options?: any): Promise<FileNode[]> {
+  async fetchTree(_url?: string, _options?: FetchOptions): Promise<FileNode[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _u = _url;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _o = _options;
     if (!this.options) {
       throw new ProviderError(
         'Provider not initialized',
@@ -163,7 +167,7 @@ export class LocalProvider extends BaseProvider {
   async fetchFile(node: FileNode): Promise<FileContent> {
     if (node.urlType === 'directory') {
       // Get from file map
-      let file = this.fileMap.get(node.path);
+      const file = this.fileMap.get(node.path);
       if (!file) {
         throw new ProviderError(
           `File not found: ${node.path}`,
