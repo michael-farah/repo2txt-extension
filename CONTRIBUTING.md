@@ -27,8 +27,8 @@ Thank you for your interest in contributing! This document provides comprehensiv
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/repo2txt.git
-cd repo2txt
+git clone https://github.com/YOUR_USERNAME/repo2txt-extension.git
+cd repo2txt-extension
 
 # Add upstream remote
 git remote add upstream https://github.com/michael-farah/repo2txt-extension.git
@@ -48,7 +48,7 @@ npm run dev
 
 ```bash
 # Development
-npm run dev              # Start dev server (http://localhost:5173/repo2txt/)
+npm run dev              # Start dev server (http://localhost:5173/)
 npm run build            # Production build
 npm run preview          # Preview production build
 
