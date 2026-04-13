@@ -25,7 +25,7 @@
     "type": "module"
   },
   "permissions": ["storage", "clipboardWrite", "activeTab"],
-  "host_permissions": ["https://api.github.com/*"],
+  "host_permissions": ["https://api.github.com/*", "https://github.com/*"],
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*"],

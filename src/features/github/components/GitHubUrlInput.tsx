@@ -3,7 +3,7 @@
  * Provides real-time URL validation and helpful hints
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { GitHubProvider } from '../GitHubProvider';
 
@@ -24,10 +24,8 @@ export function GitHubUrlInput({
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
   const [showHints, setShowHints] = useState(false);
-  const userEdited = useRef(false);
-
   useEffect(() => {
-    if (initialUrl && !userEdited.current) {
+    if (initialUrl) {
       setUrl(initialUrl);
     }
   }, [initialUrl]);
@@ -59,7 +57,6 @@ export function GitHubUrlInput({
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
-    userEdited.current = true;
     setUrl(newUrl);
   };
 

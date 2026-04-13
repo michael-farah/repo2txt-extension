@@ -78,10 +78,37 @@ function App() {
       if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
 
       try {
-        // 1. Check for existing processing state (highest priority — user was mid-processing)
+        const provider = new GitHubProvider();
+        let currentTabUrl: string | undefined;
+
+        // Get current tab URL first
+        if (chrome.tabs) {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab?.url && provider.validateUrl(tab.url)) {
+            currentTabUrl = tab.url;
+          }
+        }
+
+        // 1. Check for existing processing state
         const stateResult = await chrome.storage.session.get('processingState');
         const processingState = stateResult.processingState as ProcessingState | undefined;
+        
         if (processingState?.repoUrl) {
+          // If we're on a NEW GitHub page and previous processing finished, discard old state
+          if (currentTabUrl && currentTabUrl !== processingState.repoUrl && processingState.status === 'loaded') {
+            await chrome.storage.session.remove('processingState');
+            
+            // Clear store state for the new repo
+            useStore.getState().setNodes([]);
+            useStore.getState().setTree([]);
+            useStore.getState().setGitignorePatterns([]);
+            setOutput(null);
+            
+            setInitialUrl(currentTabUrl);
+            // We don't auto-submit the new URL, let the user click Generate
+            return;
+          }
+
           setInitialUrl(processingState.repoUrl);
           setAutoSubmitUrl(processingState.repoUrl);
           return;
@@ -98,14 +125,8 @@ function App() {
         }
 
         // 3. Auto-detect current tab URL (if it's a GitHub repo page)
-        if (chrome.tabs) {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (tab?.url) {
-            const provider = new GitHubProvider();
-            if (provider.validateUrl(tab.url)) {
-              setInitialUrl(tab.url);
-            }
-          }
+        if (currentTabUrl) {
+          setInitialUrl(currentTabUrl);
         }
       } catch {
         // Session storage or tabs API unavailable — user can paste URL manually
@@ -114,6 +135,49 @@ function App() {
 
     initialize();
   }, []);
+
+  // Listen for tab URL changes and active tab switches to auto-update the URL input
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+    const provider = new GitHubProvider();
+
+    const handleTabUpdate = async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+      if (changeInfo.url && provider.validateUrl(changeInfo.url) && !isLoading) {
+        // Only update if the tab is the active tab in the current window
+        if (tab.active) {
+          try {
+            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (activeTab && activeTab.id === tabId) {
+              setInitialUrl(changeInfo.url);
+            }
+          } catch {
+            // Ignore errors
+          }
+        }
+      }
+    };
+
+    const handleTabActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+      try {
+        // Only update if the activated tab is in the current window
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (activeTab && activeTab.id === activeInfo.tabId && activeTab.url && provider.validateUrl(activeTab.url) && !isLoading) {
+          setInitialUrl(activeTab.url);
+        }
+      } catch {
+        // Tab may have been closed
+      }
+    };
+
+    chrome.tabs.onUpdated.addListener(handleTabUpdate);
+    chrome.tabs.onActivated.addListener(handleTabActivated);
+
+    return () => {
+      chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+    };
+  }, [isLoading]);
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -197,6 +261,7 @@ function App() {
       try {
         setIsLoading(true);
         setCurrentProvider(provider);
+        setOutput(null);
 
         if (typeof chrome !== 'undefined' && chrome.storage?.session) {
           chrome.storage.session.set({
