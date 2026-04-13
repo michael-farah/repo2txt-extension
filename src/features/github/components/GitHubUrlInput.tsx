@@ -3,7 +3,7 @@
  * Provides real-time URL validation and helpful hints
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { GitHubProvider } from '../GitHubProvider';
 
@@ -11,15 +11,27 @@ interface GitHubUrlInputProps {
   onValidUrl?: (url: string) => void;
   onUrlChange?: (url: string, isValid: boolean) => void;
   hideSubmitButton?: boolean;
+  initialUrl?: string;
 }
 
-export function GitHubUrlInput({ onValidUrl, onUrlChange, hideSubmitButton = false }: GitHubUrlInputProps) {
-  const [url, setUrl] = useState('');
+export function GitHubUrlInput({
+  onValidUrl,
+  onUrlChange,
+  hideSubmitButton = false,
+  initialUrl,
+}: GitHubUrlInputProps) {
+  const [url, setUrl] = useState(initialUrl ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const userEdited = useRef(false);
 
-  // Create provider once
+  useEffect(() => {
+    if (initialUrl && !userEdited.current) {
+      setUrl(initialUrl);
+    }
+  }, [initialUrl]);
+
   const provider = useMemo(() => new GitHubProvider(), []);
 
   // Validate URL whenever it changes
@@ -27,28 +39,27 @@ export function GitHubUrlInput({ onValidUrl, onUrlChange, hideSubmitButton = fal
     if (!url) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
-       
+
       setIsValid(false);
       onUrlChange?.(url, false);
       return;
     }
 
     const isValidUrl = provider.validateUrl(url);
-     
+
     setIsValid(isValidUrl);
     onUrlChange?.(url, isValidUrl);
 
     if (isValidUrl) {
-       
       setError(null);
     } else {
-       
       setError('Invalid GitHub URL format');
     }
   }, [url, provider, onUrlChange]);
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUrl = e.target.value;
+    userEdited.current = true;
     setUrl(newUrl);
   };
 
@@ -98,9 +109,7 @@ export function GitHubUrlInput({ onValidUrl, onUrlChange, hideSubmitButton = fal
 
       {showHints && (
         <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 text-sm space-y-2">
-          <p className="text-blue-800 dark:text-blue-200 font-medium">
-            Supported URL formats:
-          </p>
+          <p className="text-blue-800 dark:text-blue-200 font-medium">Supported URL formats:</p>
           <ul className="text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
             <li>
               <code className="text-xs bg-blue-100 dark:bg-blue-800 px-1 py-0.5 rounded">
@@ -139,7 +148,10 @@ export function GitHubUrlInput({ onValidUrl, onUrlChange, hideSubmitButton = fal
               aria-describedby={error ? 'url-error' : undefined}
             />
             {error && (
-              <p id="url-error" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center">
+              <p
+                id="url-error"
+                className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center"
+              >
                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
@@ -182,15 +194,14 @@ export function GitHubUrlInput({ onValidUrl, onUrlChange, hideSubmitButton = fal
           )}
         </div>
         {!hideSubmitButton && (
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={!isValid}
-            className="w-full"
-          >
+          <Button type="submit" variant="primary" size="md" disabled={!isValid} className="w-full">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+              />
             </svg>
             Load Repository
           </Button>

@@ -14,6 +14,8 @@ interface ProviderSelectorProps {
   onLocalZipSubmit?: (file: File) => void;
   onProviderChange?: (provider: ProviderType) => void;
   disabled?: boolean;
+  initialUrl?: string;
+  autoSubmitUrl?: string;
 }
 
 export function ProviderSelector({
@@ -22,6 +24,8 @@ export function ProviderSelector({
   onLocalZipSubmit,
   onProviderChange,
   disabled = false,
+  initialUrl,
+  autoSubmitUrl,
 }: ProviderSelectorProps) {
   const [activeProvider, setActiveProvider] = useState<ProviderType>('github');
 
@@ -85,7 +89,12 @@ export function ProviderSelector({
       {/* Provider form */}
       <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
         {activeProvider === 'github' ? (
-          <GitHubForm onSubmit={onGitHubSubmit} disabled={disabled} />
+          <GitHubForm
+            onSubmit={onGitHubSubmit}
+            disabled={disabled}
+            initialUrl={initialUrl}
+            autoSubmitUrl={autoSubmitUrl}
+          />
         ) : (
           <LocalForm
             onDirectorySelected={onLocalDirectorySubmit}

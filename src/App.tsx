@@ -20,6 +20,12 @@ import type {
 } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
 
+interface ProcessingState {
+  repoUrl: string;
+  status: 'loading' | 'loaded' | 'generating';
+  timestamp: number;
+}
+
 function App() {
   const { setProviderType, setRepoUrl } = useStore();
 
@@ -56,26 +62,58 @@ function App() {
     recovery?: () => void;
     recoveryLabel?: string;
   } | null>(null);
+  const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
+  const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);
   const shouldAutoExpandRoot = useRef(false);
   const outputRef = useRef<HTMLDivElement>(null);
+  const hasInitialized = useRef(false);
 
-  // Read pending repo URL from background service worker (set via content script)
+  // Initialization: check processing state, pending URL, and auto-detect current tab
   useEffect(() => {
-    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-      chrome.storage.session
-        .get('pendingRepoUrl')
-        .then((result) => {
-          if (result.pendingRepoUrl) {
-            setRepoUrl(result.pendingRepoUrl as string);
-            setProviderType('github');
-            chrome.storage.session.remove('pendingRepoUrl');
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const initialize = async () => {
+      // Skip if not in Chrome extension context
+      if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
+
+      try {
+        // 1. Check for existing processing state (highest priority — user was mid-processing)
+        const stateResult = await chrome.storage.session.get('processingState');
+        const processingState = stateResult.processingState as ProcessingState | undefined;
+        if (processingState?.repoUrl) {
+          setInitialUrl(processingState.repoUrl);
+          setAutoSubmitUrl(processingState.repoUrl);
+          return;
+        }
+
+        // 2. Check for legacy pendingRepoUrl (content script clicked "Convert to Text")
+        const pendingResult = await chrome.storage.session.get('pendingRepoUrl');
+        if (pendingResult.pendingRepoUrl) {
+          const url = pendingResult.pendingRepoUrl as string;
+          setInitialUrl(url);
+          setAutoSubmitUrl(url);
+          chrome.storage.session.remove('pendingRepoUrl');
+          return;
+        }
+
+        // 3. Auto-detect current tab URL (if it's a GitHub repo page)
+        if (chrome.tabs) {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab?.url) {
+            const provider = new GitHubProvider();
+            if (provider.validateUrl(tab.url)) {
+              setInitialUrl(tab.url);
+            }
           }
-        })
-        .catch(() => {
-          // Session storage unavailable — user can paste URL manually
-        });
-    }
-  }, [setRepoUrl, setProviderType]);
+        }
+      } catch {
+        // Session storage or tabs API unavailable — user can paste URL manually
+      }
+    };
+
+    initialize();
+  }, []);
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -116,16 +154,29 @@ function App() {
 
   // Reset all state (store + local)
   const resetAll = useCallback(() => {
-    // Clear store state using setter functions
     setNodes([]);
     setTree([]);
     setGitignorePatterns([]);
 
-    // Clear local state
     setOutput(null);
     setCurrentProvider(null);
     setShowExcluded(false);
-  }, [setNodes, setTree, setGitignorePatterns]);
+    setInitialUrl(undefined);
+    setAutoSubmitUrl(undefined);
+
+    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+      chrome.storage.session.remove('processingState');
+    }
+  }, [
+    setNodes,
+    setTree,
+    setGitignorePatterns,
+    setOutput,
+    setCurrentProvider,
+    setShowExcluded,
+    setInitialUrl,
+    setAutoSubmitUrl,
+  ]);
 
   // Auto-expand root directories for local directory uploads
   useEffect(() => {
@@ -147,13 +198,29 @@ function App() {
         setIsLoading(true);
         setCurrentProvider(provider);
 
+        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+          chrome.storage.session.set({
+            processingState: { repoUrl: url, status: 'loading', timestamp: Date.now() },
+          });
+        }
+
         // Fetch file tree
         const fetchedNodes = await provider.fetchTree(url);
+
+        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+          chrome.storage.session.set({
+            processingState: { repoUrl: url, status: 'loaded', timestamp: Date.now() },
+          });
+        }
 
         // Update store with nodes (this will auto-select code files)
         setNodes(fetchedNodes);
       } catch (err) {
         console.error('Failed to load files:', err);
+
+        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+          chrome.storage.session.remove('processingState');
+        }
 
         if (err instanceof ProviderError) {
           setError({
@@ -293,7 +360,6 @@ function App() {
     try {
       setIsLoading(true);
 
-      // Get selected and non-excluded nodes from store
       const selectedNodes = getSelectedNodes();
 
       if (selectedNodes.length === 0) {
@@ -302,6 +368,17 @@ function App() {
             'No files selected.\n\nPlease select at least one file to generate output. You can:\n• Click the checkbox next to "File Tree" to select all files\n• Expand directories and select individual files\n• Use the Extension Filter to select files by type',
         });
         return;
+      }
+
+      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+        chrome.storage.session.get('processingState').then((result) => {
+          const existing = result.processingState as ProcessingState | undefined;
+          if (existing) {
+            chrome.storage.session.set({
+              processingState: { ...existing, status: 'generating', timestamp: Date.now() },
+            });
+          }
+        });
       }
 
       // Fetch file contents
@@ -347,7 +424,6 @@ function App() {
 
       setOutput(formattedOutput);
 
-      // Scroll to output section after a brief delay to ensure rendering
       setTimeout(() => {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -368,6 +444,17 @@ function App() {
       }
     } finally {
       setIsLoading(false);
+
+      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+        chrome.storage.session.get('processingState').then((result) => {
+          const existing = result.processingState as ProcessingState | undefined;
+          if (existing?.status === 'generating') {
+            chrome.storage.session.set({
+              processingState: { ...existing, status: 'loaded', timestamp: Date.now() },
+            });
+          }
+        });
+      }
     }
   }, [
     currentProvider,
@@ -380,7 +467,7 @@ function App() {
   ]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 w-full max-w-[600px] mx-auto shadow-xl">
+    <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-gray-50 dark:bg-gray-900 shadow-xl">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="flex h-12 items-center justify-between px-3">
@@ -423,6 +510,8 @@ function App() {
               onLocalZipSubmit={handleLocalZipSubmit}
               onProviderChange={resetAll}
               disabled={isLoading}
+              initialUrl={initialUrl}
+              autoSubmitUrl={autoSubmitUrl}
             />
           </section>
 
