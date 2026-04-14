@@ -17,8 +17,7 @@ Thank you for your interest in contributing! This document provides comprehensiv
 
 ### Prerequisites
 
-- Node.js 20+ (LTS recommended)
-- npm 10+
+- Bun 1.0+
 - Git
 - A code editor (VS Code recommended)
 
@@ -34,39 +33,39 @@ cd repo2txt-extension
 git remote add upstream https://github.com/michael-farah/repo2txt-extension.git
 
 # Install dependencies
-npm install
+bun install
 
 # Copy test configuration template
 cp tests/test-config.example.ts tests/test-config.ts
 # Add your GitHub token to test-config.ts (optional, for E2E tests)
 
 # Start development server
-npm run dev
+bun run dev
 ```
 
 ### Development Commands
 
 ```bash
 # Development
-npm run dev              # Start dev server (http://localhost:5173/)
-npm run build            # Production build
-npm run preview          # Preview production build
+bun run dev              # Start dev server (http://localhost:5173/)
+bun run build            # Production build
+bun run preview          # Preview production build
 
 # Testing
-npm run test:unit        # Run unit tests
-npm run test:e2e         # Run E2E tests
-npm run test:watch       # Watch mode for unit tests
-npm run test:coverage    # Generate coverage report
+bun run test:unit        # Run unit tests
+bun run test:e2e         # Run E2E tests
+bun run test:watch       # Watch mode for unit tests
+bun run test:coverage    # Generate coverage report
 
 # Code Quality
-npm run typecheck        # TypeScript type checking
-npm run lint             # Lint code
-npm run lint:fix         # Auto-fix linting issues
-npm run format           # Format code with Prettier
-npm run format:check     # Check formatting
+bun run typecheck        # TypeScript type checking
+bun run lint             # Lint code
+bun run lint:fix         # Auto-fix linting issues
+bun run format           # Format code with Prettier
+bun run format:check     # Check formatting
 
 # CI Pipeline (runs all checks)
-npm run ci               # typecheck + lint + test:unit
+bun run ci               # typecheck + lint + test:unit
 ```
 
 ## 🏗️ Architecture Overview
@@ -629,18 +628,18 @@ test('should complete full GitHub public repo flow', async ({ page }) => {
 
 ```bash
 # Unit tests
-npm run test:unit              # Run once
-npm run test:watch             # Watch mode
-npm run test:coverage          # With coverage
+bun run test:unit              # Run once
+bun run test:watch             # Watch mode
+bun run test:coverage          # With coverage
 
 # E2E tests
-npm run test:e2e              # All browsers
-npm run test:e2e -- --project=chromium  # Single browser
-npm run test:e2e:ui           # Interactive UI
+bun run test:e2e              # All browsers
+bun run test:e2e -- --project=chromium  # Single browser
+bun run test:e2e:ui           # Interactive UI
 
 # Test specific file
-npm run test:unit -- Formatter.test.ts
-npm run test:e2e -- github-flow.spec.ts
+bun run test:unit -- Formatter.test.ts
+bun run test:e2e -- github-flow.spec.ts
 ```
 
 ### Test Configuration
@@ -785,10 +784,10 @@ import './styles.css';
 All code must pass linting and formatting:
 
 ```bash
-npm run lint          # Check for issues
-npm run lint:fix      # Auto-fix
-npm run format        # Format with Prettier
-npm run format:check  # Check formatting
+bun run lint          # Check for issues
+bun run lint:fix      # Auto-fix
+bun run format        # Format with Prettier
+bun run format:check  # Check formatting
 ```
 
 ## 🔄 Development Workflow
@@ -850,8 +849,8 @@ git commit -m "docs: update architecture documentation"
 3. **Test Locally**
 
    ```bash
-   npm run ci          # Type check + lint + unit tests
-   npm run test:e2e    # E2E tests
+   bun run ci          # Type check + lint + unit tests
+   bun run test:e2e    # E2E tests
    ```
 
 4. **Commit Changes**
@@ -917,7 +916,7 @@ window.__ZUSTAND_STORE__;
 
 ```bash
 # Enable verbose logging
-DEBUG=vite:* npm run dev
+DEBUG=vite:* bun run dev
 ```
 
 ### Common Issues
@@ -928,8 +927,8 @@ DEBUG=vite:* npm run dev
 
 **Issue: Build fails with TypeScript errors**
 
-- Run `npm run typecheck` to see all errors
-- Use `npm run build:check` for strict type checking
+- Run `bun run typecheck` to see all errors
+- Use `bun run build:check` for strict type checking
 
 **Issue: Virtual scrolling not working**
 
