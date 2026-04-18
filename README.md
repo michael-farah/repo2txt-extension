@@ -56,8 +56,8 @@ This Chrome extension is a fork of [repo2txt](https://github.com/abinthomasonlin
 ```bash
 git clone https://github.com/michael-farah/repo2txt-extension.git
 cd repo2txt-extension
-npm install
-npm run build
+bun install
+bun run build
 ```
 
 Then load the `dist/` folder as an unpacked extension in `chrome://extensions`.
@@ -65,8 +65,8 @@ Then load the `dist/` folder as an unpacked extension in `chrome://extensions`.
 ### Development
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Open `http://localhost:5173` in your browser.
@@ -119,9 +119,9 @@ Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the developm
 ```bash
 git clone https://github.com/michael-farah/repo2txt-extension.git
 cd repo2txt-extension
-npm install
-npm run test:unit
-npm run dev
+bun install
+bun run test:unit
+bun run dev
 ```
 
 ## 📝 License
