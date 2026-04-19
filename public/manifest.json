@@ -47,6 +47,6 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self' blob: data:"
+  "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }
