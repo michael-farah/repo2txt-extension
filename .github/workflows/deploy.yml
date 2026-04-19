@@ -52,24 +52,24 @@ jobs:
           path: release/
           retention-days: 30
 
-release:
-  runs-on: ubuntu-latest
-  needs: build
-  if: startsWith(github.ref, 'refs/tags/v')
-  permissions:
-    contents: write
-  steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: repo2txt-extension
-        path: release
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: repo2txt-extension
+          path: release
 
-    - name: List release files
-      run: ls -laR release/
+      - name: List release files
+        run: ls -laR release/
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: release/repo2txt-extension/*
-        generate_release_notes: true
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/repo2txt-extension/*
+          generate_release_notes: true
