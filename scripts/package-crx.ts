@@ -1,6 +1,10 @@
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, createReadStream } from 'fs';
 import { resolve } from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const crx3 = require('crx3');
 
 const distDir = resolve(import.meta.dir, '../dist');
 const releaseDir = resolve(import.meta.dir, '../release');
@@ -25,8 +29,22 @@ console.log(`Packaging repo2txt v${version}...`);
 
 // Create zip for Chrome Web Store
 const zipName = `repo2txt-v${version}.zip`;
-execSync(`cd ${distDir} && zip -r ${resolve(releaseDir, zipName)} . -x "*.map"`);
+const zipPath = resolve(releaseDir, zipName);
+execSync(`cd ${distDir} && zip -r ${zipPath} . -x "*.map"`);
 
-console.log(`Created: release/${zipName}`);
-console.log('\nUpload this zip to Chrome Web Store Developer Dashboard.');
-console.log('For local testing, load the dist/ folder as an unpacked extension.');
+// Create CRX for self-hosted distribution
+const crxName = `repo2txt-v${version}.crx`;
+const crxPath = resolve(releaseDir, crxName);
+
+crx3(createReadStream(zipPath), { crxPath })
+  .then(() => {
+    console.log(`Created: release/${zipName}`);
+    console.log(`Created: release/${crxName}`);
+    console.log('\nUpload the zip to Chrome Web Store Developer Dashboard.');
+    console.log('Use the crx for self-hosted extension distribution.');
+    console.log('For local testing, load the dist/ folder as an unpacked extension.');
+  })
+  .catch((err: Error) => {
+    console.error('Failed to create CRX:', err.message);
+    process.exit(1);
+  });
