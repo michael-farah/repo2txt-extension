@@ -1,8 +1,8 @@
 # Contributing to repo2txt
 
-Thank you for your interest in contributing! This document provides comprehensive guidance on the project architecture, design patterns, and development workflow.
+Thank you for your interest in contributing. This document provides guidance on the project architecture, design patterns, and development workflow.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Architecture Overview](#architecture-overview)
@@ -13,7 +13,7 @@ Thank you for your interest in contributing! This document provides comprehensiv
 - [Code Style](#code-style)
 - [Pull Request Process](#pull-request-process)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -35,9 +35,6 @@ git remote add upstream https://github.com/michael-farah/repo2txt-extension.git
 # Install dependencies
 bun install
 
-# Set up git hooks (required for local CI)
-git config core.hooksPath .githooks
-
 # Copy test configuration template
 cp tests/test-config.example.ts tests/test-config.ts
 # Add your GitHub token to test-config.ts (optional, for E2E tests)
@@ -50,91 +47,28 @@ bun run dev
 
 ```bash
 # Development
-bun run dev              # Start dev server (http://localhost:5173/)
-bun run build            # Production build
-bun run preview          # Preview production build
+bun run dev # Start dev server (http://localhost:5173/)
+bun run build # Production build
+bun run preview # Preview production build
 
 # Testing
-bun run test:unit        # Run unit tests
-bun run test:e2e         # Run E2E tests
-bun run test:watch       # Watch mode for unit tests
-bun run test:coverage    # Generate coverage report
+bun run test:unit # Run unit tests
+bun run test:e2e # Run E2E tests
+bun run test:watch # Watch mode for unit tests
+bun run test:coverage # Generate coverage report
 
 # Code Quality
-bun run typecheck        # TypeScript type checking
-bun run lint             # Lint code
-bun run lint:fix         # Auto-fix linting issues
-bun run format           # Format code with Prettier
-bun run format:check     # Check formatting
+bun run typecheck # TypeScript type checking
+bun run lint # Lint code
+bun run lint:fix # Auto-fix linting issues
+bun run format # Format code with Prettier
+bun run format:check # Check formatting
 
 # CI Pipeline (runs all checks)
-bun run ci               # typecheck + lint + test:unit
+bun run ci # typecheck + lint + test:unit
 ```
 
-## 🔧 Local CI with Act
-
-This project supports running CI checks locally using [nektos/act](https://github.com/nektos/act), which runs GitHub Actions workflows in Docker containers. This provides fast feedback without pushing to GitHub.
-
-### Prerequisites
-
-1. **Install act**: `brew install act` or see the [installation guide](https://nektosact.com/installation/index.html)
-2. **Docker must be running** — act uses Docker to run workflow containers
-
-### Running CI Locally
-
-```bash
-# Run the full CI workflow (typecheck + lint + test + build)
-act -W .github/workflows/ci.yml
-
-# Run only the ci job
-act -W .github/workflows/ci.yml -j ci
-
-# Dry run (list steps without executing)
-act -W .github/workflows/ci.yml -n
-
-# List all available jobs
-act -l
-
-# Skip pulling Docker images on subsequent runs
-act -W .github/workflows/ci.yml --pull=false
-```
-
-### Pre-Commit Hook
-
-A pre-commit hook is configured to automatically run CI checks via `act` before each commit. This ensures code quality is validated locally before pushing.
-
-```bash
-# Normal commit — hook runs CI automatically
-git commit -m "feat: new feature"
-
-# Skip the hook (not recommended, use for WIP commits only)
-git commit --no-verify -m "wip: work in progress"
-```
-
-### Secrets Configuration
-
-Copy the secrets template and fill in values if needed:
-
-```bash
-cp .secrets.example .secrets
-# Edit .secrets with your values (optional for CI checks)
-```
-
-The `.secrets` file is git-ignored and read by act via `.actrc`.
-
-### Workflow Structure
-
-- **`ci.yml`** — Act-compatible CI workflow (typecheck, lint, test, build). Only triggers via `workflow_dispatch` (run locally with `act`, not on GitHub push).
-- **`deploy.yml`** — GitHub Pages deployment only. Runs on push to main/master. Not run locally (uses GitHub-specific Pages actions).
-
-### Troubleshooting
-
-- **Image pull errors**: Run `act --pull` first to download runner images
-- **Permission denied on hook**: `chmod +x .githooks/pre-commit`
-- **Slow first run**: Act downloads Docker images (~2GB) on first use
-- **Docker not running**: Start Docker Desktop or the Docker daemon
-
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### Core Design Principles
 
@@ -148,25 +82,25 @@ The `.secrets` file is git-ignored and read by act via `.actrc`.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                      React App                          │
+│ React App                                               │
 ├─────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │     UI      │  │     Store    │  │   Workers    │  │
-│  │ Components  │◄─┤   (Zustand)  │◄─┤ (Tokenizer)  │  │
-│  └─────────────┘  └──────────────┘  └──────────────┘  │
-│         ▲                 ▲                             │
-│         │                 │                             │
-│         ▼                 ▼                             │
-│  ┌─────────────────────────────────────────────────┐  │
-│  │           Provider Interface                    │  │
-│  │  (BaseProvider - Abstract Base Class)           │  │
-│  └─────────────────────────────────────────────────┘  │
-│         ▲         ▲          ▲           ▲             │
-│         │         │          │           │             │
-│    ┌────┴───┬────┴────┬─────┴─────┬────┴────┐        │
-│    │ GitHub │  Local  │  GitLab   │  Azure  │        │
-│    │Provider│ Provider│  Provider │Provider │        │
-│    └────────┴─────────┴───────────┴─────────┘        │
+│ ┌─────────────┐ ┌──────────────┐ ┌──────────────┐       │
+│ │ UI          │ │ Store        │ │ Workers      │       │
+│ │ Components  │◄─┤ (Zustand)    │◄─┤ (Tokenizer)  │       │
+│ └─────────────┘ └──────────────┘ └──────────────┘       │
+│ ▲           ▲                                           │
+│ │           │                                           │
+│ ▼           ▼                                           │
+│ ┌─────────────────────────────────────────────────┐     │
+│ │ Provider Interface                                │     │
+│ │ (BaseProvider - Abstract Base Class)            │     │
+│ └─────────────────────────────────────────────────┘     │
+│ ▲      ▲      ▲      ▲                                  │
+│ │      │      │      │                                  │
+│ ┌────┴───┬────┴────┬─────┴─────┬────┴────┐              │
+│ │ GitHub │ Local   │ GitLab    │ Azure   │              │
+│ │Provider│ Provider│ Provider  │Provider │              │
+│ └────────┴─────────┴───────────┴─────────┘              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -174,15 +108,15 @@ The `.secrets` file is git-ignored and read by act via `.actrc`.
 
 ```
 User Input → URL Parsing → Provider Selection → Tree Fetch
-    ↓
+                ↓
 File Tree (Virtual Scrolling) → User Selection → Filters
-    ↓
+                ↓
 Content Fetch → Formatting → Tokenization (Web Worker)
-    ↓
+                ↓
 Output Display → Copy/Download
 ```
 
-## 🎨 Design Patterns
+## Design Patterns
 
 ### 1. Provider Pattern
 
@@ -451,78 +385,75 @@ class ErrorBoundary extends Component {
 )}
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 repo2txt/
-├── .githooks/
-│   └── pre-commit            # Runs act CI before each commit
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml              # CI checks (act-compatible, local only)
 │       └── deploy.yml          # GitHub Pages deployment
 │
 ├── src/
-│   ├── features/                # Feature modules (domain-driven)
+│   ├── features/               # Feature modules (domain-driven)
 │   │   ├── github/
-│   │   │   ├── GitHubProvider.ts      # GitHub API implementation
-│   │   │   ├── components/            # GitHub-specific UI
-│   │   │   │   ├── GitHubAuth.tsx    # Token management
-│   │   │   │   ├── GitHubForm.tsx    # URL input form
+│   │   │   ├── GitHubProvider.ts
+│   │   │   ├── components/
+│   │   │   │   ├── GitHubAuth.tsx
+│   │   │   │   ├── GitHubForm.tsx
 │   │   │   │   └── GitHubUrlInput.tsx
-│   │   │   └── __tests__/            # Feature tests
+│   │   │   └── __tests__/
 │   │   │
 │   │   ├── local/
-│   │   │   ├── LocalProvider.ts       # File System API
+│   │   │   ├── LocalProvider.ts
 │   │   │   └── components/
 │   │   │       ├── DirectoryPicker.tsx
 │   │   │       ├── ZipUploader.tsx
 │   │   │       └── LocalForm.tsx
 │   │   │
-│   │   ├── gitlab/                    # GitLab provider (beta)
-│   │   └── azure/                     # Azure DevOps (beta)
+│   │   ├── gitlab/             # GitLab provider (beta)
+│   │   └── azure/              # Azure DevOps (beta)
 │   │
-│   ├── components/              # Shared UI components
-│   │   ├── ui/                 # Base components (buttons, dialogs)
+│   ├── components/             # Shared UI components
+│   │   ├── ui/                 # Base components
 │   │   │   ├── Button.tsx
 │   │   │   ├── ErrorDialog.tsx
 │   │   │   └── ThemeToggle.tsx
 │   │   │
 │   │   ├── file-tree/          # File tree components
-│   │   │   ├── FileTree.tsx           # Virtual scrolling tree
-│   │   │   └── FileTreeNode.tsx       # Individual node
+│   │   │   ├── FileTree.tsx
+│   │   │   └── FileTreeNode.tsx
 │   │   │
 │   │   ├── filters/            # Filtering components
 │   │   │   ├── AdvancedFilters.tsx
 │   │   │   ├── ExtensionFilter.tsx
 │   │   │   └── GitignoreEditor.tsx
 │   │   │
-│   │   ├── OutputPanel.tsx     # Output display & actions
-│   │   ├── FileStats.tsx       # Token/line statistics
-│   │   └── ProviderSelector.tsx # Provider tabs
+│   │   ├── OutputPanel.tsx
+│   │   ├── FileStats.tsx
+│   │   └── ProviderSelector.tsx
 │   │
 │   ├── lib/                    # Core business logic
 │   │   ├── providers/
-│   │   │   ├── BaseProvider.ts        # Abstract base class
-│   │   │   └── types.ts              # Shared provider types
+│   │   │   ├── BaseProvider.ts
+│   │   │   └── types.ts
 │   │   │
 │   │   ├── formatter/
-│   │   │   ├── Formatter.ts          # Output formatting
-│   │   │   ├── TokenizerWorker.ts    # Web Worker wrapper
+│   │   │   ├── Formatter.ts
+│   │   │   ├── TokenizerWorker.ts
 │   │   │   └── __tests__/
 │   │   │
 │   │   ├── gitignore/
-│   │   │   └── GitignoreParser.ts    # .gitignore parsing
+│   │   │   └── GitignoreParser.ts
 │   │   │
-│   │   └── utils.ts            # Shared utilities
+│   │   └── utils.ts
 │   │
 │   ├── store/                  # Zustand state management
-│   │   ├── index.ts            # Store composition
-│   │   └── slices/             # Store slices
-│   │       ├── providerSlice.ts      # Provider state
-│   │       ├── fileTreeSlice.ts      # File tree state
-│   │       ├── filterSlice.ts        # Filter state
-│   │       └── uiSlice.ts            # UI state (theme, loading)
+│   │   ├── index.ts
+│   │   └── slices/
+│   │       ├── providerSlice.ts
+│   │       ├── fileTreeSlice.ts
+│   │       ├── filterSlice.ts
+│   │       └── uiSlice.ts
 │   │
 │   ├── hooks/                  # Custom React hooks
 │   │   ├── useFileTree.ts
@@ -530,14 +461,14 @@ repo2txt/
 │   │   └── useTheme.ts
 │   │
 │   ├── workers/                # Web Workers
-│   │   └── tokenizer.worker.ts       # GPT tokenizer
+│   │   └── tokenizer.worker.ts
 │   │
 │   ├── types/                  # Shared TypeScript types
 │   │   └── index.ts
 │   │
-│   ├── App.tsx                 # Root component
-│   ├── main.tsx               # Entry point
-│   └── index.css              # Global styles
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
 │
 ├── tests/
 │   ├── e2e/                    # End-to-end tests (Playwright)
@@ -552,13 +483,13 @@ repo2txt/
 ├── public/                     # Static assets
 ├── dist/                       # Build output (git-ignored)
 │
-├── .eslintrc.cjs              # ESLint configuration
-├── .prettierrc                # Prettier configuration
-├── tsconfig.json              # TypeScript configuration
-├── vite.config.ts             # Vite configuration
-├── playwright.config.ts       # Playwright configuration
-├── vitest.config.ts           # Vitest configuration
-└── package.json               # Dependencies & scripts
+├── .eslintrc.cjs
+├── .prettierrc
+├── tsconfig.json
+├── vite.config.ts
+├── playwright.config.ts
+├── vitest.config.ts
+└── package.json
 ```
 
 ### Key Directories Explained
@@ -573,18 +504,18 @@ repo2txt/
 
 **`workers/`** - Web Workers for CPU-intensive tasks. Keeps UI thread responsive.
 
-## 🧪 Testing Strategy
+## Testing Strategy
 
 ### Testing Pyramid
 
 ```
-       /\
-      /  \     E2E (Playwright)      - 25 tests
-     /____\    Critical user flows
-    /      \
-   /        \  Integration            - Provider + UI
-  /__________\
- /            \ Unit (Vitest)         - 80%+ coverage
+    /\
+   /  \     E2E (Playwright) - 25 tests
+  /____\    Critical user flows
+ /      \
+/        \  Integration - Provider + UI
+/__________\
+/          \  Unit (Vitest) - 80%+ coverage
 /______________\ Business logic, utilities, components
 ```
 
@@ -610,8 +541,8 @@ describe('Formatter', () => {
 
     const formatted = Formatter.formatTree(tree);
 
-    expect(formatted).toContain('├── 📁 src');
-    expect(formatted).toContain('└── 📄 index.ts');
+    expect(formatted).toContain('├── src');
+    expect(formatted).toContain('└── index.ts');
   });
 
   it('should count tokens accurately', () => {
@@ -655,10 +586,10 @@ describe('GitHub Provider Integration', () => {
 
 **Current Coverage:**
 
-- ✅ Dark mode (5 tests)
-- ✅ Error scenarios (8 tests)
-- ✅ GitHub flow (6 tests)
-- ✅ Local flow (6 tests)
+- Dark mode (5 tests)
+- Error scenarios (8 tests)
+- GitHub flow (6 tests)
+- Local flow (6 tests)
 
 **Example:**
 
@@ -697,14 +628,14 @@ test('should complete full GitHub public repo flow', async ({ page }) => {
 
 ```bash
 # Unit tests
-bun run test:unit              # Run once
-bun run test:watch             # Watch mode
-bun run test:coverage          # With coverage
+bun run test:unit    # Run once
+bun run test:watch   # Watch mode
+bun run test:coverage # With coverage
 
 # E2E tests
-bun run test:e2e              # All browsers
+bun run test:e2e                    # All browsers
 bun run test:e2e -- --project=chromium  # Single browser
-bun run test:e2e:ui           # Interactive UI
+bun run test:e2e:ui                 # Interactive UI
 
 # Test specific file
 bun run test:unit -- Formatter.test.ts
@@ -729,7 +660,7 @@ export const testConfig = {
 
 Tests run automatically on PRs via GitHub Actions. Set `GITHUB_TOKEN` secret in repository settings for E2E tests.
 
-## 💅 Code Style
+## Code Style
 
 ### TypeScript
 
@@ -741,7 +672,7 @@ Tests run automatically on PRs via GitHub Actions. Set `GITHUB_TOKEN` secret in 
 **Example:**
 
 ```typescript
-// ✅ Good
+// Good
 interface FileNode {
   path: string;
   type: 'blob' | 'tree';
@@ -755,7 +686,7 @@ function filterNodes(nodes: FileNode[], predicate: (node: FileNode) => boolean):
   }));
 }
 
-// ❌ Bad
+// Bad
 function filterNodes(nodes: any, predicate): any {
   return nodes.filter(predicate);
 }
@@ -771,7 +702,7 @@ function filterNodes(nodes: any, predicate): any {
 **Example:**
 
 ```typescript
-// ✅ Good
+// Good
 interface FileTreeNodeProps {
   node: TreeNode;
   depth: number;
@@ -786,7 +717,7 @@ export function FileTreeNode({ node, depth, onToggle }: FileTreeNodeProps) {
   return (
     <div style={{ paddingLeft: `${depth * 16}px` }}>
       <button onClick={() => onToggle(node.path)}>
-        {isDirectory ? '📁' : '📄'} {node.name}
+        {isDirectory ? 'Folder' : 'File'} {node.name}
       </button>
     </div>
   );
@@ -803,14 +734,14 @@ export function FileTreeNode({ node, depth, onToggle }: FileTreeNodeProps) {
 **Example:**
 
 ```tsx
-// ✅ Good
+// Good
 <div className="flex items-center gap-2 p-4 bg-white dark:bg-gray-900 rounded-lg">
   <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors">
     Click me
   </button>
 </div>
 
-// ❌ Bad
+// Bad
 <div style={{ display: 'flex', padding: '16px', backgroundColor: '#fff' }}>
   <button style={{ padding: '8px 16px', backgroundColor: '#3b82f6' }}>
     Click me
@@ -859,7 +790,7 @@ bun run format        # Format with Prettier
 bun run format:check  # Check formatting
 ```
 
-## 🔄 Development Workflow
+## Development Workflow
 
 ### Branch Strategy
 
@@ -918,8 +849,8 @@ git commit -m "docs: update architecture documentation"
 3. **Test Locally**
 
    ```bash
-   bun run ci          # Type check + lint + unit tests
-   bun run test:e2e    # E2E tests
+   bun run ci       # Type check + lint + unit tests
+   bun run test:e2e # E2E tests
    ```
 
 4. **Commit Changes**
@@ -966,7 +897,7 @@ Before submitting a PR:
 - [ ] No console.logs or debugger statements
 - [ ] Bundle size impact is acceptable
 
-## 🐛 Debugging Tips
+## Debugging Tips
 
 ### React DevTools
 
@@ -1009,7 +940,7 @@ DEBUG=vite:* bun run dev
 - Check worker file path in Vite config
 - Ensure worker is imported with `?worker` suffix
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [React Documentation](https://react.dev/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
@@ -1018,7 +949,7 @@ DEBUG=vite:* bun run dev
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [Playwright Documentation](https://playwright.dev/)
 
-## 💬 Questions?
+## Questions?
 
 - **GitHub Discussions**: [Ask questions](https://github.com/michael-farah/repo2txt-extension/discussions)
 - **Issues**: [Report bugs](https://github.com/michael-farah/repo2txt-extension/issues)
@@ -1026,4 +957,4 @@ DEBUG=vite:* bun run dev
 
 ---
 
-Thank you for contributing to repo2txt! 🎉
+Thank you for contributing to repo2txt!
