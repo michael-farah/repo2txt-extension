@@ -33,3 +33,6 @@ tests/test-config.ts
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Build artifacts
+release/
