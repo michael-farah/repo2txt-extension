@@ -1,55 +1,55 @@
-# repo2txt — Chrome Extension
+# repo2txt - Chrome Extension
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Convert GitHub repositories and local folders to plain text for LLM prompts**
-> Fast, privacy-first Chrome extension for AI-assisted development
+> Privacy-first Chrome extension for AI-assisted development
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-This Chrome extension is a fork of [repo2txt](https://github.com/abinthomasonline/repo2txt) by [Abin Thomas](https://github.com/abinthomasonline). The original web version is available at [abinthomas.in/repo2txt](https://abinthomas.in/repo2txt/). Full credit for the core architecture, provider system, and UI design goes to the original project.
+This extension forks [repo2txt](https://github.com/abinthomasonline/repo2txt) by [Abin Thomas](https://github.com/abinthomasonline). The original web version lives at [abinthomas.in/repo2txt](https://abinthomas.in/repo2txt/). Core architecture, provider system, and UI design come from the original project.
 
-## ✨ Features
+## Features
 
-### 🔌 Multiple Sources
+### Multiple Sources
 
-- **GitHub** - Public and private repositories with token support
-- **Local Files** - Directory picker for your local projects
-- **Zip Upload** - Drag & drop zip files
+- **GitHub**: Public and private repositories with token support
+- **Local Files**: Directory picker for your local projects
+- **Zip Upload**: Drag and drop zip files
 
-### 🎯 Smart Filtering
+### Smart Filtering
 
-- **Extension Filter** - Select/deselect by file type
-- **Gitignore Support** - Automatically respect .gitignore patterns
-- **Custom Patterns** - Add your own ignore patterns
-- **Directory Selection** - Cherry-pick specific folders
-- **File Tree Preview** - Visual file selection with virtual scrolling
+- **Extension Filter**: Select and deselect by file type
+- **Gitignore Support**: Respects .gitignore patterns automatically
+- **Custom Patterns**: Add your own ignore patterns
+- **Directory Selection**: Cherry-pick specific folders
+- **File Tree Preview**: Visual file selection with virtual scrolling
 
-### 🚀 Performance
+### Performance
 
-- **Virtual Scrolling** - Handle repositories with 10,000+ files
-- **Code Splitting** - Lazy-loaded providers for optimal bundle size
-- **Web Workers** - Tokenization runs in background threads
-- **Progressive Loading** - Stream file contents as they load
-- **Smart Caching** - Efficient memory usage for large repos
+- **Virtual Scrolling**: Handles repositories with 10,000+ files
+- **Code Splitting**: Lazy-loaded providers for optimal bundle size
+- **Web Workers**: Tokenization runs in background threads
+- **Progressive Loading**: Streams file contents as they load
+- **Smart Caching**: Efficient memory usage for large repos
 
-### 🎨 Modern UX
+### Modern UX
 
-- **Dark Mode** - System, light, and dark themes
-- **Responsive Design** - Works on desktop, tablet, and mobile
-- **Token Counter** - Real-time GPT token counting
-- **File Statistics** - Per-file token and line counts
-- **Progress Indicators** - Clear feedback during loading
-- **GitHub Integration** - "Convert to Text" button on GitHub repo pages
+- **Dark Mode**: System, light, and dark themes
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Token Counter**: Real-time GPT token counting
+- **File Statistics**: Per-file token and line counts
+- **Progress Indicators**: Clear feedback during loading
+- **GitHub Integration**: "Convert to Text" button on GitHub repo pages
 
-### 🔒 Privacy First
+### Privacy First
 
-- **100% Client-Side** - No server uploads, all processing is local
-- **No Tracking** - Your code never leaves your device
-- **Encrypted Storage** - GitHub tokens encrypted with per-install keys
-- **Open Source** - Fully auditable codebase
+- **100% Client-Side**: No server uploads, all processing is local
+- **No Tracking**: Your code never leaves your device
+- **Encrypted Storage**: GitHub tokens encrypted with per-install keys
+- **Open Source**: Fully auditable codebase
 
-## 🚀 Install
+## Install
 
 ### From Source
 
@@ -68,7 +68,7 @@ Then load the `dist/` folder as an unpacked extension in `chrome://extensions`.
 bun run build:crx
 ```
 
-This creates `release/repo2txt-v{version}.zip` ready for Chrome Web Store upload.
+This creates `release/repo2txt-v{version}.zip` for Chrome Web Store upload and `release/repo2txt-v{version}.crx` for self-hosted distribution.
 
 ### Development
 
@@ -79,7 +79,7 @@ bun run dev
 
 Open `http://localhost:5173` in your browser.
 
-## 📖 Usage
+## Usage
 
 ### GitHub Repository
 
@@ -93,7 +93,7 @@ Open `http://localhost:5173` in your browser.
 6. Click "Generate"
 7. Copy to clipboard or download as `.txt`
 
-**Or**: Visit any GitHub repo page and click the "Convert to Text" button injected into the page header.
+You can also visit any GitHub repo page and click the "Convert to Text" button injected into the page header.
 
 **Supported URL formats:**
 
@@ -109,7 +109,7 @@ Open `http://localhost:5173` in your browser.
 3. Select your project folder or upload a zip
 4. Same filtering and export options as GitHub
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: React 19 + TypeScript
 - **Build Tool**: Vite 5
@@ -120,9 +120,9 @@ Open `http://localhost:5173` in your browser.
 - **Virtual Scrolling**: TanStack Virtual
 - **Testing**: Vitest + Playwright
 
-## 🤝 Contributing
+## Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development guide and architecture details.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development guide and architecture details.
 
 ```bash
 git clone https://github.com/michael-farah/repo2txt-extension.git
@@ -134,7 +134,7 @@ bun run dev
 
 ## Browser Support
 
-**Chrome Only** — This extension uses Chrome Manifest V3 APIs including service workers and `chrome.storage.local`.
+**Chrome Only.** This extension uses Chrome Manifest V3 APIs including service workers and `chrome.storage.local`.
 
 ### Future Support
 
@@ -142,11 +142,11 @@ bun run dev
 - **Safari**: Requires Xcode project generation and App Store distribution
 - **Edge**: Should work as-is since Edge supports Chrome extensions
 
-Contributions for cross-browser support are welcome!
+Contributions for cross-browser support are welcome.
 
 ## Future Providers
 
-We're considering support for additional Git hosting platforms:
+Support for additional Git hosting platforms is under consideration:
 
 - **GitLab**: API authentication, self-hosted instances, different rate limits
 - **Bitbucket**: API authentication, different repository structure
@@ -154,11 +154,11 @@ We're considering support for additional Git hosting platforms:
 
 To contribute a new provider, extend `BaseProvider` and implement `fetchTree`, `fetchFile`, `validateUrl`, and `parseUrl`. See `src/features/github/GitHubProvider.ts` for reference.
 
-## 📝 License
+## License
 
-MIT License - see [LICENSE](./LICENSE) for details
+MIT License. See [LICENSE](./LICENSE) for details.
 
-## 🔗 Links
+## Links
 
 - **Repository**: [github.com/michael-farah/repo2txt-extension](https://github.com/michael-farah/repo2txt-extension)
 - **Original Web Version**: [github.com/abinthomasonline/repo2txt](https://github.com/abinthomasonline/repo2txt)
