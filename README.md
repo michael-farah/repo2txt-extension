@@ -62,6 +62,14 @@ bun run build
 
 Then load the `dist/` folder as an unpacked extension in `chrome://extensions`.
 
+### For Distribution
+
+```bash
+bun run build:crx
+```
+
+This creates `release/repo2txt-v{version}.zip` ready for Chrome Web Store upload.
+
 ### Development
 
 ```bash
@@ -123,6 +131,28 @@ bun install
 bun run test:unit
 bun run dev
 ```
+
+## Browser Support
+
+**Chrome Only** — This extension uses Chrome Manifest V3 APIs including service workers and `chrome.storage.local`.
+
+### Future Support
+
+- **Firefox**: Would require `browser-polyfill` for API compatibility and MV3 adjustments
+- **Safari**: Requires Xcode project generation and App Store distribution
+- **Edge**: Should work as-is since Edge supports Chrome extensions
+
+Contributions for cross-browser support are welcome!
+
+## Future Providers
+
+We're considering support for additional Git hosting platforms:
+
+- **GitLab**: API authentication, self-hosted instances, different rate limits
+- **Bitbucket**: API authentication, different repository structure
+- **Gitea/Forgejo**: Self-hosted instances, API versioning
+
+To contribute a new provider, extend `BaseProvider` and implement `fetchTree`, `fetchFile`, `validateUrl`, and `parseUrl`. See `src/features/github/GitHubProvider.ts` for reference.
 
 ## 📝 License
 

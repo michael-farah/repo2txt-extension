@@ -35,6 +35,9 @@ git remote add upstream https://github.com/michael-farah/repo2txt-extension.git
 # Install dependencies
 bun install
 
+# Set up git hooks (required for local CI)
+git config core.hooksPath .githooks
+
 # Copy test configuration template
 cp tests/test-config.example.ts tests/test-config.ts
 # Add your GitHub token to test-config.ts (optional, for E2E tests)
@@ -67,6 +70,69 @@ bun run format:check     # Check formatting
 # CI Pipeline (runs all checks)
 bun run ci               # typecheck + lint + test:unit
 ```
+
+## 🔧 Local CI with Act
+
+This project supports running CI checks locally using [nektos/act](https://github.com/nektos/act), which runs GitHub Actions workflows in Docker containers. This provides fast feedback without pushing to GitHub.
+
+### Prerequisites
+
+1. **Install act**: `brew install act` or see the [installation guide](https://nektosact.com/installation/index.html)
+2. **Docker must be running** — act uses Docker to run workflow containers
+
+### Running CI Locally
+
+```bash
+# Run the full CI workflow (typecheck + lint + test + build)
+act -W .github/workflows/ci.yml
+
+# Run only the ci job
+act -W .github/workflows/ci.yml -j ci
+
+# Dry run (list steps without executing)
+act -W .github/workflows/ci.yml -n
+
+# List all available jobs
+act -l
+
+# Skip pulling Docker images on subsequent runs
+act -W .github/workflows/ci.yml --pull=false
+```
+
+### Pre-Commit Hook
+
+A pre-commit hook is configured to automatically run CI checks via `act` before each commit. This ensures code quality is validated locally before pushing.
+
+```bash
+# Normal commit — hook runs CI automatically
+git commit -m "feat: new feature"
+
+# Skip the hook (not recommended, use for WIP commits only)
+git commit --no-verify -m "wip: work in progress"
+```
+
+### Secrets Configuration
+
+Copy the secrets template and fill in values if needed:
+
+```bash
+cp .secrets.example .secrets
+# Edit .secrets with your values (optional for CI checks)
+```
+
+The `.secrets` file is git-ignored and read by act via `.actrc`.
+
+### Workflow Structure
+
+- **`ci.yml`** — Act-compatible CI workflow (typecheck, lint, test, build). Only triggers via `workflow_dispatch` (run locally with `act`, not on GitHub push).
+- **`deploy.yml`** — GitHub Pages deployment only. Runs on push to main/master. Not run locally (uses GitHub-specific Pages actions).
+
+### Troubleshooting
+
+- **Image pull errors**: Run `act --pull` first to download runner images
+- **Permission denied on hook**: `chmod +x .githooks/pre-commit`
+- **Slow first run**: Act downloads Docker images (~2GB) on first use
+- **Docker not running**: Start Docker Desktop or the Docker daemon
 
 ## 🏗️ Architecture Overview
 
@@ -389,9 +455,12 @@ class ErrorBoundary extends Component {
 
 ```
 repo2txt/
+├── .githooks/
+│   └── pre-commit            # Runs act CI before each commit
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml           # GitHub Actions CI/CD
+│       ├── ci.yml              # CI checks (act-compatible, local only)
+│       └── deploy.yml          # GitHub Pages deployment
 │
 ├── src/
 │   ├── features/                # Feature modules (domain-driven)

@@ -55,7 +55,7 @@ export abstract class BaseProvider implements IProvider {
   /**
    * Fetch a single file's content
    */
-  async fetchFile(node: FileNode): Promise<FileContent> {
+  async fetchFile(node: FileNode, signal?: AbortSignal): Promise<FileContent> {
     if (!node.url) {
       throw new ProviderError(
         'File node has no URL',
@@ -65,7 +65,7 @@ export abstract class BaseProvider implements IProvider {
     }
 
     try {
-      const response = await this.fetchWithRetry(node.url);
+      const response = await this.fetchWithRetry(node.url, undefined, 1, signal);
       const text = await response.text();
 
       return {
@@ -75,16 +75,25 @@ export abstract class BaseProvider implements IProvider {
         lineCount: text.split('\n').length,
       };
     } catch (error) {
+      // Re-throw AbortError without wrapping
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       throw this.handleFetchError(error, node.path);
     }
   }
 
-  async *fetchMultiple(nodes: FileNode[]): AsyncGenerator<FileContent, void, unknown> {
+  async *fetchMultiple(nodes: FileNode[], signal?: AbortSignal): AsyncGenerator<FileContent, void, unknown> {
     const { maxConcurrent, delayMs } = this.rateLimiter;
 
     for (let i = 0; i < nodes.length; i += maxConcurrent) {
+      // Check for abort between chunks
+      if (signal?.aborted) {
+        break;
+      }
+
       const chunk = nodes.slice(i, i + maxConcurrent);
-      const results = await Promise.allSettled(chunk.map((node) => this.fetchFile(node)));
+      const results = await Promise.allSettled(chunk.map((node) => this.fetchFile(node, signal)));
 
       for (const result of results) {
         if (result.status === 'fulfilled') {
@@ -119,10 +128,18 @@ export abstract class BaseProvider implements IProvider {
   protected async fetchWithRetry(
     url: string,
     options?: RequestInit,
-    attempt = 1
+    attempt = 1,
+    signal?: AbortSignal
   ): Promise<Response> {
+    // Check if already aborted before starting
+    if (signal?.aborted) {
+      const error = new Error('Request aborted');
+      error.name = 'AbortError';
+      throw error;
+    }
+
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, { ...options, signal });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -130,9 +147,14 @@ export abstract class BaseProvider implements IProvider {
 
       return response;
     } catch (error) {
+      // Don't retry on AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+
       if (attempt < (this.rateLimiter.retries || 3)) {
         await this.delay(this.rateLimiter.retryDelayMs || 1000);
-        return this.fetchWithRetry(url, options, attempt + 1);
+        return this.fetchWithRetry(url, options, attempt + 1, signal);
       }
       throw error;
     }

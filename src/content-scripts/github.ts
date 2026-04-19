@@ -238,11 +238,10 @@ function injectButton(): void {
       return;
     }
 
-    // Construct repo URL
-    let repoUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}`;
-    if (repoInfo.branch) {
-      repoUrl += `/tree/${repoInfo.branch}`;
-    }
+    // Use the current page URL directly — it already contains the full branch name
+    // (including slashes like feature/auth/login) and any subdirectory path.
+    // Reconstructing from pathParts would lose segments after the first slash.
+    const repoUrl = window.location.href;
 
     // Send message to background script to open popup
     if (chrome.runtime && chrome.runtime.sendMessage) {
