@@ -4,25 +4,33 @@ import userEvent from '@testing-library/user-event';
 import { GitHubAuth } from '../GitHubAuth';
 import { useStore } from '@/store';
 
-// Mock the store
-vi.mock('@/store', () => ({
-  useStore: vi.fn(),
-}));
+// Mock the store - must define mock inside factory to avoid hoisting issues
+vi.mock('@/store', () => {
+ const mockUseStore = vi.fn();
+ mockUseStore.getState = vi.fn();
+ return {
+ useStore: mockUseStore,
+ };
+});
 
 describe('GitHubAuth', () => {
   const mockSetCredentials = vi.fn();
+  const mockSetPAT = vi.fn();
+  const mockClearPAT = vi.fn();
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    sessionStorage.clear();
-    (useStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      credentials: null,
-      setCredentials: mockSetCredentials,
-    });
-  });
+ beforeEach(() => {
+ vi.clearAllMocks();
+ (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: null });
+ (useStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+ credentials: null,
+ setCredentials: mockSetCredentials,
+ setPAT: mockSetPAT,
+ clearPAT: mockClearPAT,
+ });
+ });
 
   afterEach(() => {
-    sessionStorage.clear();
+    vi.clearAllMocks();
   });
 
   it('should render token input field', () => {
@@ -84,17 +92,6 @@ describe('GitHubAuth', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
-  it('should save token to sessionStorage when entered', async () => {
-    render(<GitHubAuth />);
-
-    const input = screen.getByPlaceholderText('ghp_...');
-    const token = 'ghp_testtoken123';
-
-    await userEvent.type(input, token);
-
-    expect(sessionStorage.getItem('github_token')).toBe(token);
-  });
-
   it('should update store when token is entered', async () => {
     render(<GitHubAuth />);
 
@@ -108,16 +105,16 @@ describe('GitHubAuth', () => {
     });
   });
 
-  it('should load saved token from sessionStorage on mount', () => {
-    const savedToken = 'ghp_savedtoken456';
-    sessionStorage.setItem('github_token', savedToken);
+ it('should load saved token from store on mount', () => {
+ const savedToken = 'ghp_savedtoken456';
+ (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: savedToken });
 
-    render(<GitHubAuth />);
+ render(<GitHubAuth />);
 
-    const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
-    expect(input.value).toBe(savedToken);
-    expect(mockSetCredentials).toHaveBeenCalledWith({ token: savedToken });
-  });
+ const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
+ expect(input.value).toBe(savedToken);
+ expect(mockSetCredentials).toHaveBeenCalledWith({ token: savedToken });
+ });
 
   it('should show clear button when token is entered', async () => {
     render(<GitHubAuth />);
@@ -151,7 +148,6 @@ describe('GitHubAuth', () => {
     await userEvent.click(clearButton);
 
     expect(input.value).toBe('');
-    expect(sessionStorage.getItem('github_token')).toBeNull();
     expect(mockSetCredentials).toHaveBeenCalledWith({ token: undefined });
   });
 
@@ -169,19 +165,6 @@ describe('GitHubAuth', () => {
     await waitFor(() => {
       expect(screen.getByText(/Token saved/i)).toBeInTheDocument();
     });
-  });
-
-  it('should remove token from sessionStorage when cleared', async () => {
-    render(<GitHubAuth />);
-
-    const input = screen.getByPlaceholderText('ghp_...');
-    await userEvent.type(input, 'ghp_testtoken123');
-
-    expect(sessionStorage.getItem('github_token')).toBe('ghp_testtoken123');
-
-    await userEvent.clear(input);
-
-    expect(sessionStorage.getItem('github_token')).toBeNull();
   });
 
   it('should update credentials in store when token is cleared', async () => {
@@ -231,7 +214,7 @@ describe('GitHubAuth', () => {
     await userEvent.type(input, 'ghp_token2');
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('github_token')).toBe('ghp_token2');
+      expect(mockSetCredentials).toHaveBeenLastCalledWith({ token: 'ghp_token2' });
     });
   });
 });

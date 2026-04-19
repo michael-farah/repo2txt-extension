@@ -11,7 +11,8 @@ import { Formatter } from '@/lib/formatter';
 import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
-import type {
+import { useLoadQueue } from '@/hooks/useLoadQueue';
+  import type {
   FileNode,
   FileContent,
   ExtensionFilter as ExtensionFilterType,
@@ -19,7 +20,6 @@ import type {
   FileSystemDirectoryHandle,
 } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
-
 interface ProcessingState {
   repoUrl: string;
   status: 'loading' | 'loaded' | 'generating';
@@ -52,7 +52,6 @@ function App() {
   } = useStore((state) => state);
 
   // Local state
-  const [isLoading, setIsLoading] = useState(false);
   const [showExcluded, setShowExcluded] = useState(false);
   const [output, setOutput] = useState<FormattedOutput | null>(null);
   const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
@@ -64,10 +63,13 @@ function App() {
   } | null>(null);
   const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
   const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);
+  const [githubTabId, setGithubTabId] = useState<number | null>(null);
   const shouldAutoExpandRoot = useRef(false);
   const outputRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
+  // Use the load queue hook for cancellable loading
+  const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
   // Initialization: check processing state, pending URL, and auto-detect current tab
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -86,24 +88,31 @@ function App() {
           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
           if (tab?.url && provider.validateUrl(tab.url)) {
             currentTabUrl = tab.url;
+            if (tab.id !== undefined) {
+              setGithubTabId(tab.id);
+            }
           }
         }
 
         // 1. Check for existing processing state
         const stateResult = await chrome.storage.session.get('processingState');
         const processingState = stateResult.processingState as ProcessingState | undefined;
-        
+
         if (processingState?.repoUrl) {
           // If we're on a NEW GitHub page and previous processing finished, discard old state
-          if (currentTabUrl && currentTabUrl !== processingState.repoUrl && processingState.status === 'loaded') {
+          if (
+            currentTabUrl &&
+            currentTabUrl !== processingState.repoUrl &&
+            processingState.status === 'loaded'
+          ) {
             await chrome.storage.session.remove('processingState');
-            
+
             // Clear store state for the new repo
             useStore.getState().setNodes([]);
             useStore.getState().setTree([]);
             useStore.getState().setGitignorePatterns([]);
             setOutput(null);
-            
+
             setInitialUrl(currentTabUrl);
             // We don't auto-submit the new URL, let the user click Generate
             return;
@@ -142,7 +151,11 @@ function App() {
 
     const provider = new GitHubProvider();
 
-    const handleTabUpdate = async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+    const handleTabUpdate = async (
+      tabId: number,
+      changeInfo: chrome.tabs.TabChangeInfo,
+      tab: chrome.tabs.Tab
+    ) => {
       if (changeInfo.url && provider.validateUrl(changeInfo.url) && !isLoading) {
         // Only update if the tab is the active tab in the current window
         if (tab.active) {
@@ -150,6 +163,7 @@ function App() {
             const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (activeTab && activeTab.id === tabId) {
               setInitialUrl(changeInfo.url);
+              setGithubTabId(tabId);
             }
           } catch {
             // Ignore errors
@@ -162,8 +176,17 @@ function App() {
       try {
         // Only update if the activated tab is in the current window
         const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (activeTab && activeTab.id === activeInfo.tabId && activeTab.url && provider.validateUrl(activeTab.url) && !isLoading) {
+        if (
+          activeTab &&
+          activeTab.id === activeInfo.tabId &&
+          activeTab.url &&
+          provider.validateUrl(activeTab.url) &&
+          !isLoading
+        ) {
           setInitialUrl(activeTab.url);
+          if (activeTab.id !== undefined) {
+            setGithubTabId(activeTab.id);
+          }
         }
       } catch {
         // Tab may have been closed
@@ -227,6 +250,7 @@ function App() {
     setShowExcluded(false);
     setInitialUrl(undefined);
     setAutoSubmitUrl(undefined);
+    setGithubTabId(null);
 
     if (typeof chrome !== 'undefined' && chrome.storage?.session) {
       chrome.storage.session.remove('processingState');
@@ -240,6 +264,7 @@ function App() {
     setShowExcluded,
     setInitialUrl,
     setAutoSubmitUrl,
+    setGithubTabId,
   ]);
 
   // Auto-expand root directories for local directory uploads
@@ -259,7 +284,6 @@ function App() {
   const loadFiles = useCallback(
     async (provider: IProvider, url: string) => {
       try {
-        setIsLoading(true);
         setCurrentProvider(provider);
         setOutput(null);
 
@@ -269,8 +293,16 @@ function App() {
           });
         }
 
-        // Fetch file tree
-        const fetchedNodes = await provider.fetchTree(url);
+        // Use the queue-based loader with abort support
+        const fetchedNodes = await startLoad(provider, url);
+
+        // If null was returned, the load was cancelled
+        if (fetchedNodes === null) {
+          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+            chrome.storage.session.remove('processingState');
+          }
+          return;
+        }
 
         if (typeof chrome !== 'undefined' && chrome.storage?.session) {
           chrome.storage.session.set({
@@ -282,6 +314,14 @@ function App() {
         setNodes(fetchedNodes);
       } catch (err) {
         console.error('Failed to load files:', err);
+
+        // Don't show error dialog for aborted requests
+        if (err instanceof Error && err.name === 'AbortError') {
+          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+            chrome.storage.session.remove('processingState');
+          }
+          return;
+        }
 
         if (typeof chrome !== 'undefined' && chrome.storage?.session) {
           chrome.storage.session.remove('processingState');
@@ -298,13 +338,10 @@ function App() {
             message: err instanceof Error ? err.message : 'Failed to load files. Please try again.',
           });
         }
-      } finally {
-        setIsLoading(false);
       }
     },
-    [setNodes]
+    [setNodes, startLoad]
   );
-
   // Handle GitHub submission
   const handleGitHubSubmit = useCallback(
     async (url: string) => {
@@ -316,11 +353,13 @@ function App() {
       const { pat } = useStore.getState();
       if (pat) {
         provider.setCredentials({ token: pat });
+      } else {
+        provider.setSessionMode(true);
       }
 
       await loadFiles(provider, url);
     },
-    [loadFiles, setProviderType, setRepoUrl]
+    [loadFiles, setProviderType, setRepoUrl, githubTabId]
   );
 
   // Handle local directory submission
@@ -422,6 +461,9 @@ function App() {
   const handleGenerateOutput = useCallback(async () => {
     if (!currentProvider) return;
 
+    // Create an AbortController for the generation
+    const abortController = new AbortController();
+
     try {
       setIsLoading(true);
 
@@ -430,7 +472,7 @@ function App() {
       if (selectedNodes.length === 0) {
         setError({
           message:
-            'No files selected.\n\nPlease select at least one file to generate output. You can:\n• Click the checkbox next to "File Tree" to select all files\n• Expand directories and select individual files\n• Use the Extension Filter to select files by type',
+            'No files selected.\\n\\nPlease select at least one file to generate output. You can:\\n• Click the checkbox next to "File Tree" to select all files\\n• Expand directories and select individual files\\n• Use the Extension Filter to select files by type',
         });
         return;
       }
@@ -446,9 +488,9 @@ function App() {
         });
       }
 
-      // Fetch file contents
+      // Fetch file contents with abort support
       const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(selectedNodes)) {
+      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
         fileContents.push(content);
       }
 
@@ -494,6 +536,11 @@ function App() {
       }, 100);
     } catch (err) {
       console.error('Failed to generate output:', err);
+
+      // Don't show error dialog for aborted requests
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
 
       if (err instanceof ProviderError) {
         setError({
@@ -596,31 +643,40 @@ function App() {
                 onToggleExcluded={setShowExcluded}
               />
 
-              {/* File Tree */}
-              <div className="space-y-2" data-testid="file-tree-section">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={globalCheckboxState === 'checked'}
-                        ref={(input) => {
-                          if (input) {
-                            input.indeterminate = globalCheckboxState === 'indeterminate';
-                          }
-                        }}
-                        onChange={handleGlobalToggle}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
-                        aria-label="Select all files"
-                      />
-                      <h2
-                        className="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                        data-testid="file-tree-heading"
-                      >
-                        File Tree
-                      </h2>
-                    </label>
-                  </div>
+            {/* File Tree */}
+            <div className="space-y-2" data-testid="file-tree-section">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={globalCheckboxState === 'checked'}
+                      ref={(input) => {
+                        if (input) {
+                          input.indeterminate = globalCheckboxState === 'indeterminate';
+                        }
+                      }}
+                      onChange={handleGlobalToggle}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+                      aria-label="Select all files"
+                    />
+                    <h2
+                      className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                      data-testid="file-tree-heading"
+                    >
+                      File Tree
+                    </h2>
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isLoading && (
+                    <button
+                      onClick={cancelLoad}
+                      className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 h-8 px-3 text-xs touch-manipulation"
+                    >
+                      Cancel
+                    </button>
+                  )}
                   <button
                     onClick={handleGenerateOutput}
                     disabled={isLoading}
@@ -643,18 +699,18 @@ function App() {
                     <span>Generate</span>
                   </button>
                 </div>
-
-                <FileTree
-                  nodes={tree}
-                  onToggle={toggleExpanded}
-                  onSelect={toggleSelection}
-                  showExcluded={showExcluded}
-                  maxHeight={300}
-                />
               </div>
-            </section>
-          )}
 
+              <FileTree
+                nodes={tree}
+                onToggle={toggleExpanded}
+                onSelect={toggleSelection}
+                showExcluded={showExcluded}
+                maxHeight={300}
+              />
+            </div>
+          </section>
+        )}
           {/* Output */}
           {(output || isLoading) && (
             <section ref={outputRef}>

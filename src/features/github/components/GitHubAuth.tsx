@@ -8,41 +8,39 @@ import { Button } from '@/components/ui/Button';
 import { useStore } from '@/store';
 
 export function GitHubAuth() {
-  const { setCredentials } = useStore();
+  const { setCredentials, setPAT, clearPAT } = useStore();
   const [token, setToken] = useState('');
   const [showInfo, setShowInfo] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
-  // Load saved token from sessionStorage on mount
-  useEffect(() => {
-    const savedToken = sessionStorage.getItem('github_token');
-    if (savedToken) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToken(savedToken);
-
-      setCredentials({ token: savedToken });
-    }
-  }, [setCredentials]);
+ // Load saved token from Zustand store on mount
+ useEffect(() => {
+ const { pat } = useStore.getState();
+ if (pat) {
+ setToken(pat);
+ setCredentials({ token: pat });
+ }
+ }, [setCredentials]);
 
   const handleTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newToken = e.target.value;
     setToken(newToken);
 
-    // Save to sessionStorage and store
-    if (newToken) {
-      sessionStorage.setItem('github_token', newToken);
-      setCredentials({ token: newToken });
-    } else {
-      sessionStorage.removeItem('github_token');
-      setCredentials({ token: undefined });
-    }
+ // Save to store
+ if (newToken) {
+ setCredentials({ token: newToken });
+ setPAT(newToken);
+ } else {
+ setCredentials({ token: undefined });
+ clearPAT();
+ }
   };
 
-  const handleClearToken = () => {
-    setToken('');
-    sessionStorage.removeItem('github_token');
-    setCredentials({ token: undefined });
-  };
+ const handleClearToken = () => {
+ setToken('');
+ setCredentials({ token: undefined });
+ clearPAT();
+ };
 
   return (
     <div className="space-y-1.5">
@@ -78,9 +76,9 @@ export function GitHubAuth() {
 
       {showInfo && (
         <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-2 text-xs">
-          <p className="text-blue-800 dark:text-blue-200 mb-1">
-            Required for private repos & higher rate limits.
-          </p>
+ <p className="text-blue-800 dark:text-blue-200 mb-1">
+ Required for private repos & higher rate limits. For private repos, you can also use session mode (no token needed if you're logged into GitHub in your browser).
+ </p>
           <a
             href="https://github.com/settings/tokens/new?description=repo2txt-extension&scopes=repo"
             target="_blank"

@@ -8,7 +8,7 @@ export class FileNode {
   path: string;
   type: 'blob' | 'tree';
   url?: string;
-  urlType?: 'api' | 'directory' | 'zip';
+  urlType?: 'api' | 'directory' | 'zip' | 'web';
   size?: number;
   sha?: string;
   selected: boolean = false;

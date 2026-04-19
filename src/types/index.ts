@@ -6,7 +6,7 @@ export interface FileNode {
   path: string;
   type: 'blob' | 'tree';
   url?: string;
-  urlType?: 'api' | 'directory' | 'zip';
+  urlType?: 'api' | 'directory' | 'zip' | 'web';
   size?: number;
   sha?: string;
 }
@@ -36,9 +36,10 @@ export interface ProviderCredentials {
 }
 
 export interface FetchOptions {
-  branch?: string;
-  path?: string;
+branch?: string;
+path?: string;
   credentials?: ProviderCredentials;
+  signal?: AbortSignal;
 }
 
 export interface TreeNode {
