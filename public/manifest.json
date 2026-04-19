@@ -24,8 +24,12 @@
     "service_worker": "background/index.js",
     "type": "module"
   },
-  "permissions": ["storage", "clipboardWrite", "activeTab"],
-  "host_permissions": ["https://api.github.com/*", "https://github.com/*"],
+  "permissions": ["storage", "clipboardWrite", "activeTab", "scripting", "downloads"],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "https://github.com/*",
+    "https://raw.githubusercontent.com/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*"],
@@ -43,6 +47,6 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self' blob: data:"
   }
 }

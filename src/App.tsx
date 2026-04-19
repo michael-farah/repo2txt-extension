@@ -64,6 +64,7 @@ function App() {
   const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
   const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);
   const [githubTabId, setGithubTabId] = useState<number | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const shouldAutoExpandRoot = useRef(false);
   const outputRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
@@ -465,7 +466,7 @@ function App() {
     const abortController = new AbortController();
 
     try {
-      setIsLoading(true);
+      setIsGenerating(true);
 
       const selectedNodes = getSelectedNodes();
 
@@ -555,7 +556,7 @@ function App() {
         });
       }
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
 
       if (typeof chrome !== 'undefined' && chrome.storage?.session) {
         chrome.storage.session.get('processingState').then((result) => {
@@ -679,25 +680,34 @@ function App() {
                   )}
                   <button
                     onClick={handleGenerateOutput}
-                    disabled={isLoading}
+ disabled={isLoading || isGenerating}
                     data-testid="generate-output-button"
-                    className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 h-8 px-3 text-xs touch-manipulation"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 mr-1.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    <span>Generate</span>
-                  </button>
+ className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:bg-primary-600 h-8 px-3 text-xs touch-manipulation"
+ >
+ {isGenerating ? (
+ <>
+ <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+ <span>Generating...</span>
+ </>
+ ) : (
+ <>
+ <svg
+ className="w-3.5 h-3.5 mr-1.5"
+ fill="none"
+ stroke="currentColor"
+ viewBox="0 0 24 24"
+ >
+ <path
+ strokeLinecap="round"
+ strokeLinejoin="round"
+ strokeWidth={2}
+ d="M13 10V3L4 14h7v7l9-11h-7z"
+ />
+ </svg>
+ <span>Generate</span>
+ </>
+ )}
+ </button>
                 </div>
               </div>
 
@@ -712,12 +722,12 @@ function App() {
           </section>
         )}
           {/* Output */}
-          {(output || isLoading) && (
+ {(output || isGenerating) && (
             <section ref={outputRef}>
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Output
               </h2>
-              <OutputPanel output={output} isLoading={isLoading} repoName={repoName} />
+ <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} />
             </section>
           )}
         </div>

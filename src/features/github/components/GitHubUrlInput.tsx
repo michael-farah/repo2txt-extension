@@ -24,11 +24,6 @@ export function GitHubUrlInput({
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
   const [showHints, setShowHints] = useState(false);
-  useEffect(() => {
-    if (initialUrl) {
-      setUrl(initialUrl);
-    }
-  }, [initialUrl]);
 
   const provider = useMemo(() => new GitHubProvider(), []);
 

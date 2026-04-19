@@ -3,24 +3,27 @@
  * Handles Personal Access Token input with secure storage
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useStore } from '@/store';
 
 export function GitHubAuth() {
   const { setCredentials, setPAT, clearPAT } = useStore();
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(() => useStore.getState().pat || '');
   const [showInfo, setShowInfo] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const credentialsInitialized = useRef(false);
 
- // Load saved token from Zustand store on mount
- useEffect(() => {
- const { pat } = useStore.getState();
- if (pat) {
- setToken(pat);
- setCredentials({ token: pat });
- }
- }, [setCredentials]);
+  // Initialize credentials from persisted token on mount
+  useEffect(() => {
+    if (!credentialsInitialized.current) {
+      const { pat } = useStore.getState();
+      if (pat) {
+        setCredentials({ token: pat });
+      }
+      credentialsInitialized.current = true;
+    }
+  }, [setCredentials]);
 
   const handleTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newToken = e.target.value;
