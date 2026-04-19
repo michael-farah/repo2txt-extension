@@ -7,6 +7,7 @@ import { useState } from 'react';
 import JSZip from 'jszip';
 import { Button } from './ui/Button';
 import { FileStats } from './FileStats';
+import { sanitizeFilename } from '@/lib/utils/repoName';
 import type { FormattedOutput } from '@/types';
 
 interface OutputPanelProps {
@@ -23,6 +24,7 @@ export function OutputPanel({
   const [copied, setCopied] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<'txt' | 'md' | 'zip'>('txt');
   const [isDownloading, setIsDownloading] = useState(false);
+const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const handleCopy = async () => {
     if (!output) return;
@@ -38,22 +40,32 @@ export function OutputPanel({
     }
   };
 
+  const fallbackDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
   const handleDownload = async () => {
     if (!output) return;
 
+    setDownloadError(null);
     setIsDownloading(true);
 
     try {
       const fullText = `${output.directoryTree}\n\n${output.fileContents}`;
+      const safeName = sanitizeFilename(repoName);
+      const isChromeExtension = typeof chrome !== 'undefined' && chrome.downloads;
 
       if (downloadFormat === 'zip') {
-        // Create ZIP file
         const zip = new JSZip();
+        zip.file(`${safeName}.txt`, fullText);
 
-        // Add main output file
-        zip.file(`${repoName}.txt`, fullText);
-
-        // Add metadata file
         const metadata = {
           generatedAt: new Date().toISOString(),
           repository: repoName,
@@ -63,30 +75,44 @@ export function OutputPanel({
         };
         zip.file('metadata.json', JSON.stringify(metadata, null, 2));
 
-        // Generate and download ZIP
         const blob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${repoName}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+
+        if (isChromeExtension) {
+          const url = URL.createObjectURL(blob);
+          try {
+            await chrome.downloads.download({
+              url,
+              filename: `${safeName}.zip`,
+              saveAs: true,
+            });
+          } finally {
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+          }
+        } else {
+          fallbackDownload(blob, `${safeName}.zip`);
+        }
       } else {
-        // Download as text file (txt or md)
-        const blob = new Blob([fullText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${repoName}.${downloadFormat}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const mimeType = downloadFormat === 'md' ? 'text/markdown' : 'text/plain';
+        const blob = new Blob([fullText], { type: mimeType });
+
+        if (isChromeExtension) {
+          const url = URL.createObjectURL(blob);
+          try {
+            await chrome.downloads.download({
+              url,
+              filename: `${safeName}.${downloadFormat}`,
+              saveAs: true,
+            });
+          } finally {
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+          }
+        } else {
+          fallbackDownload(blob, `${safeName}.${downloadFormat}`);
+        }
       }
     } catch (error) {
       console.error('Failed to download:', error);
+      setDownloadError(error instanceof Error ? error.message : 'Download failed. Please try again.');
     } finally {
       setIsDownloading(false);
     }
@@ -191,7 +217,7 @@ export function OutputPanel({
           <div className="flex gap-1.5 flex-1">
             <select
               value={downloadFormat}
-              onChange={(e) => setDownloadFormat(e.target.value as 'txt' | 'md' | 'zip')}
+          onChange={(e) => { setDownloadFormat(e.target.value as 'txt' | 'md' | 'zip'); setDownloadError(null); }}
               className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 py-1 text-xs text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               title="Select download format"
             >
@@ -233,6 +259,9 @@ export function OutputPanel({
               )}
             </Button>
           </div>
+          {downloadError && (
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{downloadError}</p>
+          )}
         </div>
       </div>
 
