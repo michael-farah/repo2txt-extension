@@ -1,29 +1,20 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChromeTab } from '@/hooks/useChromeTab';
 import { useGeneration } from '@/hooks/useGeneration';
+import { useProviderLoader } from '@/hooks/useProviderLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
 import { FileTree } from '@/components/file-tree';
 import { OutputPanel } from '@/components/OutputPanel';
-import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
+import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { useStore } from '@/store';
-import { useLoadQueue } from '@/hooks/useLoadQueue';
-  import type {
+import type {
   ExtensionFilter as ExtensionFilterType,
-  FormattedOutput,
-  FileSystemDirectoryHandle,
+  FileNode,
 } from '@/types';
-import type { IProvider } from '@/lib/providers/types';
-
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
 function App() {
-  const { setProviderType, setRepoUrl } = useStore();
 
   // Get file tree state from store
   const {
@@ -33,8 +24,6 @@ function App() {
     expandedPaths,
     extensions,
     gitignorePatterns,
-    setNodes,
-    setTree,
     toggleSelection,
     toggleExpanded,
     toggleExtension,
@@ -49,17 +38,23 @@ function App() {
 
   // Local state
   const [showExcluded, setShowExcluded] = useState(false);
-  const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
-  const [repoName, setRepoName] = useState<string>('repo-export');
-  const [error, setError] = useState<{
-    message: string;
-    recovery?: () => void;
-    recoveryLabel?: string;
-  } | null>(null);
-  const shouldAutoExpandRoot = useRef(false);
 
-  // Use the load queue hook for cancellable loading
-  const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
+  const {
+    currentProvider,
+    repoName,
+    error,
+    isLoading,
+    cancelLoad,
+    handleGitHubSubmit,
+    handleLocalDirectorySubmit,
+    handleLocalZipSubmit,
+    setError,
+    shouldAutoExpandRoot,
+    resetProviderState,
+  } = useProviderLoader({
+    onOutputClear: () => setOutput(null),
+    toggleExpanded,
+  });
   // Chrome tab detection
   const { initialUrl, autoSubmitUrl, githubTabId, resetTabState } = useChromeTab(isLoading, () => setOutput(null));
 
@@ -102,20 +97,11 @@ function App() {
 
   // Reset all state (store + local)
   const resetAll = useCallback(() => {
-    setNodes([]);
-    setTree([]);
-    setGitignorePatterns([]);
-
-    setOutput(null);
-    setCurrentProvider(null);
+    resetProviderState();
     setShowExcluded(false);
     resetTabState();
   }, [
-    setNodes,
-    setTree,
-    setGitignorePatterns,
-    setOutput,
-    setCurrentProvider,
+    resetProviderState,
     setShowExcluded,
     resetTabState,
   ]);
@@ -133,134 +119,6 @@ function App() {
     }
   }, [tree, toggleExpanded]);
 
-  // Load files from provider
-  const loadFiles = useCallback(
-    async (provider: IProvider, url: string) => {
-      try {
-        setCurrentProvider(provider);
-        setOutput(null);
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loading', timestamp: Date.now() },
-          });
-        }
-
-        // Use the queue-based loader with abort support
-        const fetchedNodes = await startLoad(provider, url);
-
-        // If null was returned, the load was cancelled
-        if (fetchedNodes === null) {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
-          return;
-        }
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loaded', timestamp: Date.now() },
-          });
-        }
-
-        // Update store with nodes (this will auto-select code files)
-        setNodes(fetchedNodes);
-      } catch (err) {
-        console.error('Failed to load files:', err);
-
-        // Don't show error dialog for aborted requests
-        if (err instanceof Error && err.name === 'AbortError') {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
-          return;
-        }
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.remove('processingState');
-        }
-
-        if (err instanceof ProviderError) {
-          setError({
-            message: err.userMessage,
-            recovery: err.recovery,
-            recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-          });
-        } else {
-          setError({
-            message: err instanceof Error ? err.message : 'Failed to load files. Please try again.',
-          });
-        }
-      }
-    },
-    [setNodes, startLoad]
-  );
-  // Handle GitHub submission
-  const handleGitHubSubmit = useCallback(
-    async (url: string) => {
-      setProviderType('github');
-      setRepoUrl(url);
-      setRepoName(extractGitHubRepoName(url));
-
-      const provider = new GitHubProvider();
-      const { pat } = useStore.getState();
-      if (pat) {
-        provider.setCredentials({ token: pat });
-      } else {
-        provider.setSessionMode(true);
-      }
-
-      await loadFiles(provider, url);
-    },
-    [loadFiles, setProviderType, setRepoUrl, githubTabId]
-  );
-
-  // Handle local directory submission
-  const handleLocalDirectorySubmit = useCallback(
-    async (filesOrHandle: FileList | FileSystemDirectoryHandle) => {
-      setProviderType('local');
-
-      const isHandle =
-        filesOrHandle && 'values' in filesOrHandle && typeof filesOrHandle.values === 'function';
-      setRepoName(
-        isHandle
-          ? (filesOrHandle as FileSystemDirectoryHandle).name
-          : extractLocalName(filesOrHandle as FileList)
-      );
-
-      // Dynamically import Local provider (code splitting)
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-
-      if (isHandle) {
-        await provider.initialize({ source: 'directory', directoryHandle: filesOrHandle });
-      } else {
-        await provider.initialize({ source: 'directory', files: filesOrHandle as FileList });
-      }
-
-      // Set flag to auto-expand root after tree is built
-      shouldAutoExpandRoot.current = true;
-
-      await loadFiles(provider, 'local://directory');
-    },
-    [loadFiles, setProviderType]
-  );
-
-  // Handle local zip submission
-  const handleLocalZipSubmit = useCallback(
-    async (file: File) => {
-      setProviderType('local');
-      setRepoName(extractLocalName(file));
-
-      // Dynamically import Local provider (code splitting)
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-      await provider.initialize({ source: 'zip', zipFile: file });
-
-      await loadFiles(provider, 'local://zip');
-    },
-    [loadFiles, setProviderType]
-  );
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
