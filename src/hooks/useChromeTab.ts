@@ -87,7 +87,7 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
     };
 
     initialize();
-  }, []);
+  }, [onNewRepoDetected]);
 
   // Listen for tab URL changes and active tab switches to auto-update the URL input
   useEffect(() => {
