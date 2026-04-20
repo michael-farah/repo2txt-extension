@@ -39,18 +39,18 @@ export function ProviderSelector({
   return (
     <div className="space-y-2">
       {/* Provider tabs */}
-      <div className="flex space-x-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => handleProviderChange('github')}
           disabled={disabled}
           data-testid="provider-tab-github"
           className={`
-            flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation
-            ${
-              activeProvider === 'github'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }
+          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2
+          ${
+            activeProvider === 'github'
+              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
@@ -65,12 +65,12 @@ export function ProviderSelector({
           disabled={disabled}
           data-testid="provider-tab-local"
           className={`
-            flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation
-            ${
-              activeProvider === 'local'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }
+          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2
+          ${
+            activeProvider === 'local'
+              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
@@ -87,7 +87,7 @@ export function ProviderSelector({
       </div>
 
       {/* Provider form */}
-      <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+      <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5">
         {activeProvider === 'github' ? (
           <GitHubForm
             onSubmit={onGitHubSubmit}

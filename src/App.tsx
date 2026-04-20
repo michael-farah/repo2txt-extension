@@ -1,33 +1,20 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useChromeTab } from '@/hooks/useChromeTab';
+import { useGeneration } from '@/hooks/useGeneration';
+import { useProviderLoader } from '@/hooks/useProviderLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
 import { FileTree } from '@/components/file-tree';
 import { OutputPanel } from '@/components/OutputPanel';
-import { ProviderError } from '@/lib/providers/types';
-import { GitHubProvider } from '@/features/github';
-import { Formatter } from '@/lib/formatter';
 import { buildTree, extractDirectories } from '@/lib/tree-builder';
-import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
-import { useLoadQueue } from '@/hooks/useLoadQueue';
-  import type {
-  FileNode,
-  FileContent,
+import type {
   ExtensionFilter as ExtensionFilterType,
-  FormattedOutput,
-  FileSystemDirectoryHandle,
+  FileNode,
 } from '@/types';
-import type { IProvider } from '@/lib/providers/types';
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
-
 function App() {
-  const { setProviderType, setRepoUrl } = useStore();
 
   // Get file tree state from store
   const {
@@ -37,8 +24,6 @@ function App() {
     expandedPaths,
     extensions,
     gitignorePatterns,
-    setNodes,
-    setTree,
     toggleSelection,
     toggleExpanded,
     toggleExtension,
@@ -51,157 +36,27 @@ function App() {
     deselectAll,
   } = useStore((state) => state);
 
-  // Local state
   const [showExcluded, setShowExcluded] = useState(false);
-  const [output, setOutput] = useState<FormattedOutput | null>(null);
-  const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
-  const [repoName, setRepoName] = useState<string>('repo-export');
-  const [error, setError] = useState<{
-    message: string;
-    recovery?: () => void;
-    recoveryLabel?: string;
-  } | null>(null);
-  const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
-  const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);
-  const [githubTabId, setGithubTabId] = useState<number | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const shouldAutoExpandRoot = useRef(false);
-  const outputRef = useRef<HTMLDivElement>(null);
-  const hasInitialized = useRef(false);
 
-  // Use the load queue hook for cancellable loading
-  const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
-  // Initialization: check processing state, pending URL, and auto-detect current tab
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    const initialize = async () => {
-      // Skip if not in Chrome extension context
-      if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
-
-      try {
-        const provider = new GitHubProvider();
-        let currentTabUrl: string | undefined;
-
-        // Get current tab URL first
-        if (chrome.tabs) {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (tab?.url && provider.validateUrl(tab.url)) {
-            currentTabUrl = tab.url;
-            if (tab.id !== undefined) {
-              setGithubTabId(tab.id);
-            }
-          }
-        }
-
-        // 1. Check for existing processing state
-        const stateResult = await chrome.storage.session.get('processingState');
-        const processingState = stateResult.processingState as ProcessingState | undefined;
-
-        if (processingState?.repoUrl) {
-          // If we're on a NEW GitHub page and previous processing finished, discard old state
-          if (
-            currentTabUrl &&
-            currentTabUrl !== processingState.repoUrl &&
-            processingState.status === 'loaded'
-          ) {
-            await chrome.storage.session.remove('processingState');
-
-            // Clear store state for the new repo
-            useStore.getState().setNodes([]);
-            useStore.getState().setTree([]);
-            useStore.getState().setGitignorePatterns([]);
-            setOutput(null);
-
-            setInitialUrl(currentTabUrl);
-            // We don't auto-submit the new URL, let the user click Generate
-            return;
-          }
-
-          setInitialUrl(processingState.repoUrl);
-          setAutoSubmitUrl(processingState.repoUrl);
-          return;
-        }
-
-        // 2. Check for legacy pendingRepoUrl (content script clicked "Convert to Text")
-        const pendingResult = await chrome.storage.session.get('pendingRepoUrl');
-        if (pendingResult.pendingRepoUrl) {
-          const url = pendingResult.pendingRepoUrl as string;
-          setInitialUrl(url);
-          setAutoSubmitUrl(url);
-          chrome.storage.session.remove('pendingRepoUrl');
-          return;
-        }
-
-        // 3. Auto-detect current tab URL (if it's a GitHub repo page)
-        if (currentTabUrl) {
-          setInitialUrl(currentTabUrl);
-        }
-      } catch {
-        // Session storage or tabs API unavailable — user can paste URL manually
-      }
-    };
-
-    initialize();
-  }, []);
-
-  // Listen for tab URL changes and active tab switches to auto-update the URL input
-  useEffect(() => {
-    if (typeof chrome === 'undefined' || !chrome.tabs) return;
-
-    const provider = new GitHubProvider();
-
-    const handleTabUpdate = async (
-      tabId: number,
-      changeInfo: chrome.tabs.TabChangeInfo,
-      tab: chrome.tabs.Tab
-    ) => {
-      if (changeInfo.url && provider.validateUrl(changeInfo.url) && !isLoading) {
-        // Only update if the tab is the active tab in the current window
-        if (tab.active) {
-          try {
-            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (activeTab && activeTab.id === tabId) {
-              setInitialUrl(changeInfo.url);
-              setGithubTabId(tabId);
-            }
-          } catch {
-            // Ignore errors
-          }
-        }
-      }
-    };
-
-    const handleTabActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
-      try {
-        // Only update if the activated tab is in the current window
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (
-          activeTab &&
-          activeTab.id === activeInfo.tabId &&
-          activeTab.url &&
-          provider.validateUrl(activeTab.url) &&
-          !isLoading
-        ) {
-          setInitialUrl(activeTab.url);
-          if (activeTab.id !== undefined) {
-            setGithubTabId(activeTab.id);
-          }
-        }
-      } catch {
-        // Tab may have been closed
-      }
-    };
-
-    chrome.tabs.onUpdated.addListener(handleTabUpdate);
-    chrome.tabs.onActivated.addListener(handleTabActivated);
-
-    return () => {
-      chrome.tabs.onUpdated.removeListener(handleTabUpdate);
-      chrome.tabs.onActivated.removeListener(handleTabActivated);
-    };
-  }, [isLoading]);
+  // Ref to hold output clear callback (set later after useGeneration provides setOutput)
+  const clearOutputRef = useRef<() => void>(() => {});
+  const {
+    currentProvider,
+    repoName,
+    error,
+    isLoading,
+    cancelLoad,
+    handleGitHubSubmit,
+    handleLocalDirectorySubmit,
+    handleLocalZipSubmit,
+    setError,
+    shouldAutoExpandRootRef,
+    resetProviderState,
+  } = useProviderLoader({
+    onOutputClear: () => clearOutputRef.current(),
+  });
+  // Chrome tab detection
+  const { initialUrl, autoSubmitUrl, resetTabState } = useChromeTab(isLoading, () => clearOutputRef.current());
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -242,36 +97,19 @@ function App() {
 
   // Reset all state (store + local)
   const resetAll = useCallback(() => {
-    setNodes([]);
-    setTree([]);
-    setGitignorePatterns([]);
-
-    setOutput(null);
-    setCurrentProvider(null);
+    resetProviderState();
     setShowExcluded(false);
-    setInitialUrl(undefined);
-    setAutoSubmitUrl(undefined);
-    setGithubTabId(null);
-
-    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-      chrome.storage.session.remove('processingState');
-    }
+    resetTabState();
   }, [
-    setNodes,
-    setTree,
-    setGitignorePatterns,
-    setOutput,
-    setCurrentProvider,
+    resetProviderState,
     setShowExcluded,
-    setInitialUrl,
-    setAutoSubmitUrl,
-    setGithubTabId,
+    resetTabState,
   ]);
 
   // Auto-expand root directories for local directory uploads
   useEffect(() => {
-    if (shouldAutoExpandRoot.current && tree.length > 0) {
-      shouldAutoExpandRoot.current = false;
+  if (shouldAutoExpandRootRef.current && tree.length > 0) {
+    shouldAutoExpandRootRef.current = false;
       // Expand all root-level directories
       tree.forEach((node) => {
         if (node.type === 'directory') {
@@ -279,136 +117,7 @@ function App() {
         }
       });
     }
-  }, [tree, toggleExpanded]);
-
-  // Load files from provider
-  const loadFiles = useCallback(
-    async (provider: IProvider, url: string) => {
-      try {
-        setCurrentProvider(provider);
-        setOutput(null);
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loading', timestamp: Date.now() },
-          });
-        }
-
-        // Use the queue-based loader with abort support
-        const fetchedNodes = await startLoad(provider, url);
-
-        // If null was returned, the load was cancelled
-        if (fetchedNodes === null) {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
-          return;
-        }
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loaded', timestamp: Date.now() },
-          });
-        }
-
-        // Update store with nodes (this will auto-select code files)
-        setNodes(fetchedNodes);
-      } catch (err) {
-        console.error('Failed to load files:', err);
-
-        // Don't show error dialog for aborted requests
-        if (err instanceof Error && err.name === 'AbortError') {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
-          return;
-        }
-
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.remove('processingState');
-        }
-
-        if (err instanceof ProviderError) {
-          setError({
-            message: err.userMessage,
-            recovery: err.recovery,
-            recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-          });
-        } else {
-          setError({
-            message: err instanceof Error ? err.message : 'Failed to load files. Please try again.',
-          });
-        }
-      }
-    },
-    [setNodes, startLoad]
-  );
-  // Handle GitHub submission
-  const handleGitHubSubmit = useCallback(
-    async (url: string) => {
-      setProviderType('github');
-      setRepoUrl(url);
-      setRepoName(extractGitHubRepoName(url));
-
-      const provider = new GitHubProvider();
-      const { pat } = useStore.getState();
-      if (pat) {
-        provider.setCredentials({ token: pat });
-      } else {
-        provider.setSessionMode(true);
-      }
-
-      await loadFiles(provider, url);
-    },
-    [loadFiles, setProviderType, setRepoUrl, githubTabId]
-  );
-
-  // Handle local directory submission
-  const handleLocalDirectorySubmit = useCallback(
-    async (filesOrHandle: FileList | FileSystemDirectoryHandle) => {
-      setProviderType('local');
-
-      const isHandle =
-        filesOrHandle && 'values' in filesOrHandle && typeof filesOrHandle.values === 'function';
-      setRepoName(
-        isHandle
-          ? (filesOrHandle as FileSystemDirectoryHandle).name
-          : extractLocalName(filesOrHandle as FileList)
-      );
-
-      // Dynamically import Local provider (code splitting)
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-
-      if (isHandle) {
-        await provider.initialize({ source: 'directory', directoryHandle: filesOrHandle });
-      } else {
-        await provider.initialize({ source: 'directory', files: filesOrHandle as FileList });
-      }
-
-      // Set flag to auto-expand root after tree is built
-      shouldAutoExpandRoot.current = true;
-
-      await loadFiles(provider, 'local://directory');
-    },
-    [loadFiles, setProviderType]
-  );
-
-  // Handle local zip submission
-  const handleLocalZipSubmit = useCallback(
-    async (file: File) => {
-      setProviderType('local');
-      setRepoName(extractLocalName(file));
-
-      // Dynamically import Local provider (code splitting)
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-      await provider.initialize({ source: 'zip', zipFile: file });
-
-      await loadFiles(provider, 'local://zip');
-    },
-    [loadFiles, setProviderType]
-  );
+  }, [tree, toggleExpanded, shouldAutoExpandRootRef]);
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
@@ -458,127 +167,27 @@ function App() {
     return getGlobalSelectionState();
   }, [getGlobalSelectionState]);
 
-  // Handle generate output
-  const handleGenerateOutput = useCallback(async () => {
-    if (!currentProvider) return;
-
-    // Create an AbortController for the generation
-    const abortController = new AbortController();
-
-    try {
-      setIsGenerating(true);
-
-      const selectedNodes = getSelectedNodes();
-
-      if (selectedNodes.length === 0) {
-        setError({
-          message:
-            'No files selected.\\n\\nPlease select at least one file to generate output. You can:\\n• Click the checkbox next to "File Tree" to select all files\\n• Expand directories and select individual files\\n• Use the Extension Filter to select files by type',
-        });
-        return;
-      }
-
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing) {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'generating', timestamp: Date.now() },
-            });
-          }
-        });
-      }
-
-      // Fetch file contents with abort support
-      const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
-        fileContents.push(content);
-      }
-
-      // Build a fully expanded tree for output (ignore UI expansion state)
-      const existingPaths = new Set(nodes.map((n) => n.path));
-      const dirPaths = extractDirectories(nodes);
-      const newDirNodes = dirPaths
-        .filter((path) => !existingPaths.has(path))
-        .map((path) => ({
-          path,
-          type: 'tree' as const,
-        }));
-      let allNodes: FileNode[] = [...nodes, ...newDirNodes];
-
-      // Filter out excluded files and directories if showExcluded is false
-      if (!showExcluded) {
-        allNodes = allNodes.filter((n) => !excludedPaths.has(n.path));
-      }
-
-      // Build tree with all directories expanded (pass all paths as expanded)
-      const allDirPaths = new Set(allNodes.filter((n) => n.type === 'tree').map((n) => n.path));
-      const fullTree = buildTree(allNodes, {
-        selectedPaths,
-        excludedPaths: showExcluded ? excludedPaths : new Set(), // Clear excluded paths if not showing them
-        expandedPaths: allDirPaths, // All directories expanded for output
-        getDirectorySelectionState,
-      });
-
-      // Format output with full tree (using async Web Worker for better performance)
-      const formattedOutput = await Formatter.formatAsync(
-        fullTree,
-        fileContents,
-        (progress, current, total) => {
-          // Progress callback - could show progress UI here
-          console.log(`Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
-        }
-      );
-
-      setOutput(formattedOutput);
-
-      setTimeout(() => {
-        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    } catch (err) {
-      console.error('Failed to generate output:', err);
-
-      // Don't show error dialog for aborted requests
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-
-      if (err instanceof ProviderError) {
-        setError({
-          message: err.userMessage,
-          recovery: err.recovery,
-          recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-        });
-      } else {
-        setError({
-          message:
-            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
-        });
-      }
-    } finally {
-      setIsGenerating(false);
-
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing?.status === 'generating') {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'loaded', timestamp: Date.now() },
-            });
-          }
-        });
-      }
-    }
-  }, [
+  // Generation
+  const {
+    output,
+    isGenerating,
+    generateOutput: handleGenerateOutput,
+    outputRef,
+    setOutput,
+  } = useGeneration({
     currentProvider,
     getSelectedNodes,
     nodes,
     selectedPaths,
     excludedPaths,
-    getDirectorySelectionState,
     showExcluded,
-  ]);
-
+    getDirectorySelectionState,
+    onError: (err) => setError(err),
+  });
+  // Wire up output clear ref after setOutput is available
+  useEffect(() => {
+    clearOutputRef.current = () => setOutput(null);
+  });
   return (
     <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-gray-50 dark:bg-gray-900 shadow-xl">
       {/* Header */}
