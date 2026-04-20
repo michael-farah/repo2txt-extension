@@ -56,7 +56,7 @@ function App() {
     toggleExpanded,
   });
   // Chrome tab detection
-  const { initialUrl, autoSubmitUrl, githubTabId, resetTabState } = useChromeTab(isLoading, () => setOutput(null));
+  const { initialUrl, autoSubmitUrl, resetTabState } = useChromeTab(isLoading, () => setOutput(null));
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -118,7 +118,6 @@ function App() {
       });
     }
   }, [tree, toggleExpanded]);
-
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
