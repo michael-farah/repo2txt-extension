@@ -27,6 +27,13 @@ export function GitHubUrlInput({
 
   const provider = useMemo(() => new GitHubProvider(), []);
 
+  // Sync initialUrl prop to state when it changes after mount
+  useEffect(() => {
+    if (initialUrl !== undefined) {
+      setUrl(initialUrl);
+    }
+  }, [initialUrl]);
+
   // Validate URL whenever it changes
   useEffect(() => {
     if (!url) {
