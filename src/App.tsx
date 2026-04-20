@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useChromeTab } from '@/hooks/useChromeTab';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useProviderLoader } from '@/hooks/useProviderLoader';
@@ -36,9 +36,10 @@ function App() {
     deselectAll,
   } = useStore((state) => state);
 
-  // Local state
   const [showExcluded, setShowExcluded] = useState(false);
 
+  // Ref to hold output clear callback (set later after useGeneration provides setOutput)
+  const clearOutputRef = useRef<() => void>(() => {});
   const {
     currentProvider,
     repoName,
@@ -49,14 +50,13 @@ function App() {
     handleLocalDirectorySubmit,
     handleLocalZipSubmit,
     setError,
-    shouldAutoExpandRoot,
+    shouldAutoExpandRootRef,
     resetProviderState,
   } = useProviderLoader({
-    onOutputClear: () => setOutput(null),
-    toggleExpanded,
+    onOutputClear: () => clearOutputRef.current(),
   });
   // Chrome tab detection
-  const { initialUrl, autoSubmitUrl, resetTabState } = useChromeTab(isLoading, () => setOutput(null));
+  const { initialUrl, autoSubmitUrl, resetTabState } = useChromeTab(isLoading, () => clearOutputRef.current());
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -108,8 +108,8 @@ function App() {
 
   // Auto-expand root directories for local directory uploads
   useEffect(() => {
-    if (shouldAutoExpandRoot.current && tree.length > 0) {
-      shouldAutoExpandRoot.current = false;
+  if (shouldAutoExpandRootRef.current && tree.length > 0) {
+    shouldAutoExpandRootRef.current = false;
       // Expand all root-level directories
       tree.forEach((node) => {
         if (node.type === 'directory') {
@@ -117,7 +117,7 @@ function App() {
         }
       });
     }
-  }, [tree, toggleExpanded]);
+  }, [tree, toggleExpanded, shouldAutoExpandRootRef]);
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
@@ -184,7 +184,10 @@ function App() {
     getDirectorySelectionState,
     onError: (err) => setError(err),
   });
-
+  // Wire up output clear ref after setOutput is available
+  useEffect(() => {
+    clearOutputRef.current = () => setOutput(null);
+  });
   return (
     <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-gray-50 dark:bg-gray-900 shadow-xl">
       {/* Header */}

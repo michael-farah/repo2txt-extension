@@ -4,22 +4,16 @@ import { ProviderError } from '@/lib/providers/types';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
 import { useLoadQueue } from '@/hooks/useLoadQueue';
-import type { FileNode, FormattedOutput, FileSystemDirectoryHandle } from '@/types';
+import type { FileSystemDirectoryHandle } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
 
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
 
 interface UseProviderLoaderOpts {
   onOutputClear: () => void;
-  toggleExpanded: (path: string) => void;
 }
 
 export function useProviderLoader(opts: UseProviderLoaderOpts) {
-  const { onOutputClear, toggleExpanded } = opts;
+  const { onOutputClear } = opts;
   const { setProviderType, setRepoUrl, setNodes, setTree, setGitignorePatterns } = useStore();
 
   const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
@@ -29,7 +23,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
     recovery?: () => void;
     recoveryLabel?: string;
   } | null>(null);
-  const shouldAutoExpandRoot = useRef(false);
+  const shouldAutoExpandRootRef = useRef(false);
 
   const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
 
@@ -134,7 +128,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         await provider.initialize({ source: 'directory', files: filesOrHandle as FileList });
       }
 
-      shouldAutoExpandRoot.current = true;
+  shouldAutoExpandRootRef.current = true;
 
       await loadFiles(provider, 'local://directory');
     },
@@ -177,7 +171,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
     handleLocalDirectorySubmit,
     handleLocalZipSubmit,
     setError,
-    shouldAutoExpandRoot,
+    shouldAutoExpandRootRef,
     resetProviderState,
   };
 }
