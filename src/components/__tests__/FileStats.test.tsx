@@ -29,14 +29,15 @@ describe('FileStats', () => {
   it('should render file statistics with summary always visible', () => {
     render(<FileStats files={mockFiles} />);
 
-    expect(screen.getByText('File Statistics')).toBeInTheDocument();
+    // Summary label should be visible
+    expect(screen.getByText('Files')).toBeInTheDocument();
 
-    // Summary stats should be visible even when collapsed
-    expect(screen.getByText('3')).toBeInTheDocument(); // File count
-    expect(screen.getByText('175')).toBeInTheDocument(); // Total lines
-    expect(screen.getByText('525')).toBeInTheDocument(); // Total tokens
+    // Summary stats should be visible in the compact summary
+    expect(screen.getByText(/3 files/)).toBeInTheDocument();
+    expect(screen.getByText(/175 lines/)).toBeInTheDocument();
+    expect(screen.getByText(/525 tokens/)).toBeInTheDocument();
 
-    // But per-file details should be hidden
+    // Per-file details should be hidden initially (collapsed by default)
     expect(screen.queryByText('src/App.tsx')).not.toBeInTheDocument();
   });
 
@@ -46,7 +47,7 @@ describe('FileStats', () => {
     // Per-file details should be hidden initially
     expect(screen.queryByText('src/App.tsx')).not.toBeInTheDocument();
 
-    const header = screen.getByText('File Statistics');
+    const header = screen.getByText('Files');
     await userEvent.click(header);
 
     // Should now show per-file details
@@ -59,7 +60,7 @@ describe('FileStats', () => {
     render(<FileStats files={mockFiles} />);
 
     // Expand the component
-    const header = screen.getByText('File Statistics');
+    const header = screen.getByText('Files');
     await userEvent.click(header);
 
     // Check that App.tsx (300 tokens) appears before index.ts (150 tokens)
@@ -81,7 +82,7 @@ describe('FileStats', () => {
     render(<FileStats files={mockFiles} />);
 
     // Expand the component
-    const header = screen.getByText('File Statistics');
+    const header = screen.getByText('Files');
     await userEvent.click(header);
 
     expect(screen.getByText('50')).toBeInTheDocument(); // index.ts lines
@@ -119,10 +120,11 @@ describe('FileStats', () => {
 
     render(<FileStats files={files} />);
 
-    expect(screen.getByText('File Statistics')).toBeInTheDocument();
+    // Summary should render
+    expect(screen.getByText('Files')).toBeInTheDocument();
 
     // Expand to verify it handles missing lineCount gracefully
-    const header = screen.getByText('File Statistics');
+    const header = screen.getByText('Files');
     await userEvent.click(header);
 
     expect(screen.getByText('src/index.ts')).toBeInTheDocument();

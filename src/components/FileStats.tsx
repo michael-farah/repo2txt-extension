@@ -33,18 +33,31 @@ export function FileStats({ files }: FileStatsProps) {
   const totalLines = sortedFiles.reduce((sum, f) => sum + (f.lineCount || 0), 0);
 
   return (
-    <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
       {/* Header with summary - Always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        className="w-full p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            File Statistics
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Files</h3>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                {sortedFiles.length} files
+              </span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">•</span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                {totalLines.toLocaleString()} lines
+              </span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">•</span>
+              <span className="text-[10px] text-primary-600 dark:text-primary-400">
+                {totalTokens.toLocaleString()} tokens
+              </span>
+            </div>
+          </div>
           <svg
-            className={`w-5 h-5 text-gray-500 transition-transform ${
+            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
               isExpanded ? 'transform rotate-180' : ''
             }`}
             fill="none"
@@ -59,57 +72,33 @@ export function FileStats({ files }: FileStatsProps) {
             />
           </svg>
         </div>
-
-        {/* Summary - Always visible */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Files</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {sortedFiles.length}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Total Lines</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {totalLines.toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Total Tokens</div>
-            <div className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-              {totalTokens.toLocaleString()}
-            </div>
-          </div>
-        </div>
       </button>
 
       {/* Collapsible per-file details */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
-
-          {/* Per-file list */}
-          <div className="space-y-1 max-h-64 overflow-y-auto mt-4">
+        <div className="px-2 pb-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="space-y-0.5 max-h-48 overflow-y-auto pt-2">
             {sortedFiles.map((file) => (
               <div
                 key={file.path}
-                className="flex items-center justify-between py-2 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="flex items-center justify-between py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                <div className="flex-1 min-w-0 mr-4">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                <div className="flex-1 min-w-0 mr-3">
+                  <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                     {file.path.split('/').pop()}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                     {file.path}
                   </div>
                 </div>
-                <div className="flex gap-4 text-sm">
+                <div className="flex gap-3 text-xs">
                   <div className="text-gray-600 dark:text-gray-400">
                     <span className="font-medium">{file.lineCount?.toLocaleString()}</span>
-                    <span className="text-xs ml-1">lines</span>
+                    <span className="text-[10px] ml-0.5">lines</span>
                   </div>
                   <div className="text-primary-600 dark:text-primary-400">
                     <span className="font-medium">{file.tokenCount?.toLocaleString()}</span>
-                    <span className="text-xs ml-1">tokens</span>
+                    <span className="text-[10px] ml-0.5">tokens</span>
                   </div>
                 </div>
               </div>
