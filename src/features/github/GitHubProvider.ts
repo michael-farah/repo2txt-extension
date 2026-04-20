@@ -427,7 +427,7 @@ private async fetchTreeSession(
   } else if (this.repoInfo?.owner) {
     // PAT-mode node falling back to session: construct web URL from repo metadata
     const branch = this.repoInfo.branch || 'HEAD';
-    rawUrl = `${GitHubProvider.WEB_BASE}/${this.repoInfo.owner}/${this.repoInfo.repo}/raw/${branch}/${node.path}`;
+      rawUrl = `${GitHubProvider.WEB_BASE}/${this.repoInfo.owner}/${this.repoInfo.name}/raw/${branch}/${node.path}`;
   } else {
     throw new ProviderError(
       'Cannot construct session URL for file',
@@ -591,7 +591,7 @@ private async fetchTreeSession(
   try {
     // Session mode: use github.com web endpoints
     if (this.sessionMode) {
-      const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch, options?.signal);
+    const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
       const branch = options?.branch || resolved.branch;
       const path = options?.path || resolved.path;
 
@@ -624,10 +624,11 @@ private async fetchTreeSession(
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
-      // PAT got 404/403: fall back to session mode
-      if (this.credentials?.token && this.is404or403Error(error)) {
+          // API got 404: fall back to session mode (repo may be private or require browser auth)
+          // Note: 403 is rate limiting, don't fall back for that
+          if (this.is404Error(error)) {
         this.sessionMode = true;
-        const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch, options?.signal);
+    const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
         const branch = options?.branch || resolved.branch;
         const path = options?.path || resolved.path;
 
@@ -888,10 +889,10 @@ private async fetchTreeManualRecursive(
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
-if (this.credentials?.token && this.is404or403Error(error)) {
-this.sessionMode = true;
-return this.fetchFileSession(node, signal);
-}
+    if (this.is404Error(error)) {
+      this.sessionMode = true;
+      return this.fetchFileSession(node, signal);
+    }
 throw this.handleFetchError(error, node.path);
 }
 }
@@ -963,12 +964,11 @@ Click the GitHub icon in the authentication section above to add a token.`,
   }
 
   /**
-   * Check if an error indicates a 404 or 403 response
+   * Check if an error indicates a 404 response (repo not found or private)
    */
-  private is404or403Error(error: unknown): boolean {
+  private is404Error(error: unknown): boolean {
     if (error instanceof Error) {
-      const message = error.message;
-      return message.includes('404') || message.includes('403');
+      return error.message.includes('404');
     }
     return false;
   }

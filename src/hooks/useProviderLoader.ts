@@ -93,13 +93,11 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
       setRepoUrl(url);
       setRepoName(extractGitHubRepoName(url));
 
-      const provider = new GitHubProvider();
-      const { pat } = useStore.getState();
-      if (pat) {
-        provider.setCredentials({ token: pat });
-      } else {
-        provider.setSessionMode(true);
-      }
+    const provider = new GitHubProvider();
+    const { pat } = useStore.getState();
+    if (pat) {
+      provider.setCredentials({ token: pat });
+    }
 
       await loadFiles(provider, url);
     },

@@ -244,6 +244,18 @@ describe('GitHubProvider', () => {
         expect(providerError.recovery).toBeDefined();
       }
     });
+
+  it('should fetch tree for public repo without token (unauthenticated API)', async () => {
+    // No credentials set — provider should use unauthenticated GitHub API
+    // which works for public repos with 60 req/hr rate limit
+    expect(provider.requiresAuth()).toBe(false);
+
+    const tree = await provider.fetchTree('https://github.com/owner/repo');
+
+    expect(tree).toBeDefined();
+    expect(Array.isArray(tree)).toBe(true);
+    expect(tree.length).toBeGreaterThan(0);
+  });
   });
 
   describe('fetchFile', () => {
