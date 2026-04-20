@@ -1,20 +1,16 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useChromeTab } from '@/hooks/useChromeTab';
+import { useGeneration } from '@/hooks/useGeneration';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
 import { FileTree } from '@/components/file-tree';
 import { OutputPanel } from '@/components/OutputPanel';
-import { ProviderError } from '@/lib/providers/types';
-import { Formatter } from '@/lib/formatter';
-import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
 import { useLoadQueue } from '@/hooks/useLoadQueue';
   import type {
-  FileNode,
-  FileContent,
   ExtensionFilter as ExtensionFilterType,
   FormattedOutput,
   FileSystemDirectoryHandle,
@@ -53,7 +49,6 @@ function App() {
 
   // Local state
   const [showExcluded, setShowExcluded] = useState(false);
-  const [output, setOutput] = useState<FormattedOutput | null>(null);
   const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
   const [repoName, setRepoName] = useState<string>('repo-export');
   const [error, setError] = useState<{
@@ -61,9 +56,7 @@ function App() {
     recovery?: () => void;
     recoveryLabel?: string;
   } | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const shouldAutoExpandRoot = useRef(false);
-  const outputRef = useRef<HTMLDivElement>(null);
 
   // Use the load queue hook for cancellable loading
   const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
@@ -317,126 +310,23 @@ function App() {
     return getGlobalSelectionState();
   }, [getGlobalSelectionState]);
 
-  // Handle generate output
-  const handleGenerateOutput = useCallback(async () => {
-    if (!currentProvider) return;
-
-    // Create an AbortController for the generation
-    const abortController = new AbortController();
-
-    try {
-      setIsGenerating(true);
-
-      const selectedNodes = getSelectedNodes();
-
-      if (selectedNodes.length === 0) {
-        setError({
-          message:
-            'No files selected.\\n\\nPlease select at least one file to generate output. You can:\\n• Click the checkbox next to "File Tree" to select all files\\n• Expand directories and select individual files\\n• Use the Extension Filter to select files by type',
-        });
-        return;
-      }
-
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing) {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'generating', timestamp: Date.now() },
-            });
-          }
-        });
-      }
-
-      // Fetch file contents with abort support
-      const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
-        fileContents.push(content);
-      }
-
-      // Build a fully expanded tree for output (ignore UI expansion state)
-      const existingPaths = new Set(nodes.map((n) => n.path));
-      const dirPaths = extractDirectories(nodes);
-      const newDirNodes = dirPaths
-        .filter((path) => !existingPaths.has(path))
-        .map((path) => ({
-          path,
-          type: 'tree' as const,
-        }));
-      let allNodes: FileNode[] = [...nodes, ...newDirNodes];
-
-      // Filter out excluded files and directories if showExcluded is false
-      if (!showExcluded) {
-        allNodes = allNodes.filter((n) => !excludedPaths.has(n.path));
-      }
-
-      // Build tree with all directories expanded (pass all paths as expanded)
-      const allDirPaths = new Set(allNodes.filter((n) => n.type === 'tree').map((n) => n.path));
-      const fullTree = buildTree(allNodes, {
-        selectedPaths,
-        excludedPaths: showExcluded ? excludedPaths : new Set(), // Clear excluded paths if not showing them
-        expandedPaths: allDirPaths, // All directories expanded for output
-        getDirectorySelectionState,
-      });
-
-      // Format output with full tree (using async Web Worker for better performance)
-      const formattedOutput = await Formatter.formatAsync(
-        fullTree,
-        fileContents,
-        (progress, current, total) => {
-          // Progress callback - could show progress UI here
-          console.log(`Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
-        }
-      );
-
-      setOutput(formattedOutput);
-
-      setTimeout(() => {
-        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    } catch (err) {
-      console.error('Failed to generate output:', err);
-
-      // Don't show error dialog for aborted requests
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-
-      if (err instanceof ProviderError) {
-        setError({
-          message: err.userMessage,
-          recovery: err.recovery,
-          recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-        });
-      } else {
-        setError({
-          message:
-            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
-        });
-      }
-    } finally {
-      setIsGenerating(false);
-
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing?.status === 'generating') {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'loaded', timestamp: Date.now() },
-            });
-          }
-        });
-      }
-    }
-  }, [
+  // Generation
+  const {
+    output,
+    isGenerating,
+    generateOutput: handleGenerateOutput,
+    outputRef,
+    setOutput,
+  } = useGeneration({
     currentProvider,
     getSelectedNodes,
     nodes,
     selectedPaths,
     excludedPaths,
-    getDirectorySelectionState,
     showExcluded,
-  ]);
+    getDirectorySelectionState,
+    onError: (err) => setError(err),
+  });
 
   return (
     <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-gray-50 dark:bg-gray-900 shadow-xl">
