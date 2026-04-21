@@ -37,15 +37,17 @@ describe('FileStats', () => {
     expect(screen.getByText(/175 lines/)).toBeInTheDocument();
     expect(screen.getByText(/525 tokens/)).toBeInTheDocument();
 
-    // Per-file details should be hidden initially (collapsed by default)
-    expect(screen.queryByText('src/App.tsx')).not.toBeInTheDocument();
+    // Per-file details should be collapsed by default (grid-rows-[0fr] hides content)
+    const collapseContainer = document.querySelector('[class*="grid-rows-[0fr]"]');
+    expect(collapseContainer).toBeInTheDocument();
   });
 
   it('should show per-file details when expanded', async () => {
     render(<FileStats files={mockFiles} />);
 
-    // Per-file details should be hidden initially
-    expect(screen.queryByText('src/App.tsx')).not.toBeInTheDocument();
+    // Per-file details should be collapsed initially (grid-rows-[0fr] hides content)
+    const collapseContainer = document.querySelector('[class*="grid-rows-[0fr]"]');
+    expect(collapseContainer).toBeInTheDocument();
 
     const header = screen.getByText('Files');
     await userEvent.click(header);

@@ -109,7 +109,7 @@ useEffect(() => {
       </label>
 
       {showHints && (
-        <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 text-sm space-y-2">
+        <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 text-sm space-y-2 animate-fade-in">
           <p className="text-blue-800 dark:text-blue-200 font-medium">Supported URL formats:</p>
           <ul className="text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
             <li>

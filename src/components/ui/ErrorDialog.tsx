@@ -3,7 +3,7 @@
  * Displays user-friendly error messages with optional recovery actions
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface ErrorDialogProps {
   title?: string;
@@ -20,6 +20,7 @@ export function ErrorDialog({
   onAction,
   actionLabel = 'Help',
 }: ErrorDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -29,9 +30,47 @@ export function ErrorDialog({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
+  // Focus trap
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    // Focus the first focusable element
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length > 0) {
+      focusable[0].focus();
+    }
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialog) return;
+      const focusableElements = dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleTab);
+    return () => window.removeEventListener('keydown', handleTab);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+      <div ref={dialogRef} role="dialog" aria-modal="true" className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div className="flex items-start gap-3">

@@ -31,3 +31,59 @@
   }
 }
 
+@layer utilities {
+  /* Collapse/expand animation */
+  .animate-collapse {
+    animation: collapse 200ms ease-out forwards;
+  }
+  .animate-expand {
+    animation: expand 200ms ease-out forwards;
+  }
+
+  /* Smooth fade in */
+  .animate-fade-in {
+    animation: fadeIn 150ms ease-out forwards;
+  }
+
+  /* Press feedback scale */
+  .press-scale {
+    transition: transform 100ms ease-out;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+}
+
+@keyframes collapse {
+  from {
+    opacity: 1;
+    max-height: 500px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+}
+
+@keyframes expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+

@@ -119,7 +119,7 @@ export function GitIgnoreEditor({
 
       {/* Show excluded files toggle */}
       <div className="space-y-1">
-        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer min-h-[36px]">
           <input
             type="checkbox"
             checked={localShowExcluded}

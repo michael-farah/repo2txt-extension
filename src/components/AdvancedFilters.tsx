@@ -47,7 +47,7 @@ export function AdvancedFilters({
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Advanced Filters
           </h3>
-          <span className="text-[9px] text-gray-500 dark:text-gray-400">Extension & Gitignore</span>
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">Extension & Gitignore</span>
         </div>
         <svg
           className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
@@ -62,38 +62,40 @@ export function AdvancedFilters({
       </button>
 
       {/* Content */}
-      {isExpanded && (
-        <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 gap-3">
-            {/* Extension Filter */}
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                File Extensions
-              </h4>
-              <ExtensionFilter
-                extensions={extensions}
-                onToggle={onExtensionToggle}
-                onSelectAll={onSelectAllExtensions}
-                onDeselectAll={onDeselectAllExtensions}
-              />
-            </div>
+      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 gap-3">
+              {/* Extension Filter */}
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                  File Extensions
+                </h4>
+                <ExtensionFilter
+                  extensions={extensions}
+                  onToggle={onExtensionToggle}
+                  onSelectAll={onSelectAllExtensions}
+                  onDeselectAll={onDeselectAllExtensions}
+                />
+              </div>
 
-            {/* Gitignore Patterns */}
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                Gitignore Patterns
-              </h4>
-              <GitIgnoreEditor
-                patterns={gitignorePatterns}
-                onApply={onApplyGitignore}
-                onReset={onResetGitignore}
-                showExcluded={showExcluded}
-                onToggleExcluded={onToggleExcluded}
-              />
+              {/* Gitignore Patterns */}
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                  Gitignore Patterns
+                </h4>
+                <GitIgnoreEditor
+                  patterns={gitignorePatterns}
+                  onApply={onApplyGitignore}
+                  onReset={onResetGitignore}
+                  showExcluded={showExcluded}
+                  onToggleExcluded={onToggleExcluded}
+                />
+              </div>
             </div>
           </div>
         </div>
-      )}
+    </div>
     </div>
   );
 }

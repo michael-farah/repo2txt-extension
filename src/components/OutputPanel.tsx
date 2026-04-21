@@ -157,19 +157,19 @@ export function OutputPanel({
   return (
     <div className="space-y-1.5">
       {/* Stats + Actions Row */}
-      <div className="flex items-center justify-between p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-2">
+      <div className="flex items-center justify-between p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-2 transition-colors">
         {/* Compact Stats Pills */}
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[10px] text-gray-500 dark:text-gray-400">Lines</span>
+<span className="text-[11px] text-gray-500 dark:text-gray-400">Lines</span>
 <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.lineCount.toLocaleString()}</span>
 </span>
 <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[10px] text-gray-500 dark:text-gray-400">Tokens</span>
+<span className="text-[11px] text-gray-500 dark:text-gray-400">Tokens</span>
 <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{output.tokenCount.toLocaleString()}</span>
 </span>
 <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[10px] text-gray-500 dark:text-gray-400">Files</span>
+<span className="text-[11px] text-gray-500 dark:text-gray-400">Files</span>
 <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.files?.length || 0}</span>
 </span>
         </div>
@@ -219,6 +219,7 @@ export function OutputPanel({
             onChange={(e) => { setDownloadFormat(e.target.value as 'txt' | 'md' | 'zip'); setDownloadError(null); }}
             className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 text-xs text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             title="Select download format"
+            aria-label="Download format"
           >
             <option value="txt">TXT</option>
             <option value="md">MD</option>
@@ -253,7 +254,7 @@ export function OutputPanel({
                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                   />
                 </svg>
-                DL
+                <span>Download</span>
               </>
             )}
           </Button>
@@ -269,8 +270,8 @@ export function OutputPanel({
 
       {/* Output preview */}
       <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <div className="p-2 max-h-32 overflow-auto">
-          <pre className="text-[10px] font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+        <div className="p-2 max-h-48 overflow-auto">
+          <pre className="text-[11px] font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
             {fullText}
           </pre>
         </div>

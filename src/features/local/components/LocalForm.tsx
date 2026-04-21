@@ -41,7 +41,7 @@ export function LocalForm({
           onClick={() => handleTabChange('directory')}
           data-testid="local-tab-directory"
           className={`
-            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors
+            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
             ${
               activeTab === 'directory'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
@@ -68,7 +68,7 @@ export function LocalForm({
           onClick={() => handleTabChange('zip')}
           data-testid="local-tab-zip"
           className={`
-            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors
+            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
             ${
               activeTab === 'zip'
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'

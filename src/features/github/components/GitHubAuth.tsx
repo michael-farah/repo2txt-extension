@@ -161,7 +161,7 @@ export function GitHubAuth() {
       </div>
 
       {token && (
-        <p className="text-[10px] text-green-600 dark:text-green-400 flex items-center">
+        <p className="text-[11px] text-green-600 dark:text-green-400 flex items-center">
           <svg className="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
