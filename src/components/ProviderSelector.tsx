@@ -45,10 +45,10 @@ export function ProviderSelector({
           disabled={disabled}
           data-testid="provider-tab-github"
           className={`
-          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2
+          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2 active:opacity-80
           ${
             activeProvider === 'github'
-              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100'
+              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100 bg-primary-50/50 dark:bg-primary-900/20'
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -65,10 +65,10 @@ export function ProviderSelector({
           disabled={disabled}
           data-testid="provider-tab-local"
           className={`
-          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2
+          flex-1 flex items-center justify-center gap-1.5 px-2 pt-1 pb-1.5 text-xs font-medium transition-colors min-h-[32px] touch-manipulation border-b-2 active:opacity-80
           ${
             activeProvider === 'local'
-              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100'
+              ? 'border-primary-600 dark:border-primary-400 text-gray-900 dark:text-gray-100 bg-primary-50/50 dark:bg-primary-900/20'
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}

@@ -4,6 +4,7 @@ import { useGeneration } from '@/hooks/useGeneration';
 import { useProviderLoader } from '@/hooks/useProviderLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
+import { Button } from '@/components/ui/Button';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
 import { FileTree } from '@/components/file-tree';
@@ -195,7 +196,7 @@ function App() {
         <div className="flex h-12 items-center justify-between px-3">
           <div className="flex items-center gap-1.5">
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">repo2txt</h1>
-            <span className="rounded-full bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[9px] font-semibold text-primary-700 dark:text-primary-300">
+          <span className="rounded-full bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-300">
               v2.0 Beta
             </span>
           </div>
@@ -280,43 +281,35 @@ function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   {isLoading && (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={cancelLoad}
-                      className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 h-8 px-3 text-xs touch-manipulation"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={handleGenerateOutput}
- disabled={isLoading || isGenerating}
+                    disabled={isLoading || isGenerating}
                     data-testid="generate-output-button"
- className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:bg-primary-600 h-8 px-3 text-xs touch-manipulation"
- >
- {isGenerating ? (
- <>
- <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
- <span>Generating...</span>
- </>
- ) : (
- <>
- <svg
- className="w-3.5 h-3.5 mr-1.5"
- fill="none"
- stroke="currentColor"
- viewBox="0 0 24 24"
- >
- <path
- strokeLinecap="round"
- strokeLinejoin="round"
- strokeWidth={2}
- d="M13 10V3L4 14h7v7l9-11h-7z"
- />
- </svg>
- <span>Generate</span>
- </>
- )}
- </button>
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>Generate</span>
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
 

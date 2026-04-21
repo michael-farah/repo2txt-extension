@@ -62,7 +62,7 @@ export function ExtensionFilter({
             {extensions.map((ext) => (
               <label
                 key={ext.extension}
-                className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer min-h-[36px]"
               >
                 <div className="flex items-center gap-2 flex-1">
                   <input

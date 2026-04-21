@@ -75,7 +75,7 @@ export function FileTreeNode({
   return (
     <div
       className={`
-        flex items-center gap-2 py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded
+        flex items-center gap-2 py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded transition-colors duration-100 min-h-[32px]
         ${isExcluded ? 'opacity-50' : ''}
         ${isDirectory ? 'cursor-pointer' : ''}
       `}
@@ -89,7 +89,7 @@ export function FileTreeNode({
             e.stopPropagation();
             handleToggle();
           }}
-          className="flex-shrink-0 p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+          className="flex-shrink-0 p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 rounded min-w-[28px] min-h-[28px] flex items-center justify-center transition-colors duration-100"
           aria-label={node.children ? 'Collapse' : 'Expand'}
         >
           <svg
@@ -120,7 +120,7 @@ export function FileTreeNode({
           }}
           onChange={handleCheckboxChange}
           onClick={(e) => e.stopPropagation()}
-          className="flex-shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+          className="flex-shrink-0 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-800"
           aria-label={`Select ${node.name}`}
         />
       )}
