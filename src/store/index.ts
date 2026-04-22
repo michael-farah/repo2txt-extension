@@ -5,8 +5,10 @@ import { createProviderSlice } from './slices/providerSlice';
 import { createFileTreeSlice } from './slices/fileTreeSlice';
 import { createUISlice } from './slices/uiSlice';
 import { createCacheSlice } from './slices/cacheSlice';
+import type { CachedRepoData } from './slices/cacheSlice';
 import { createSettingsSlice } from './slices/settingsSlice';
-import { chromeStorage, jsonReplacer, jsonReviver } from '@/lib/storage/chromeStorage';
+import { chromeStorage } from '@/lib/storage/chromeStorage';
+import type { FileNode } from '@/types';
 
 import type { ThemeSlice } from './slices/themeSlice';
 import type { ProviderSlice } from './slices/providerSlice';
@@ -15,30 +17,28 @@ import type { UISlice } from './slices/uiSlice';
 import type { CacheSlice } from './slices/cacheSlice';
 import type { SettingsSlice } from './slices/settingsSlice';
 
-export type AppStore = ThemeSlice & ProviderSlice & FileTreeSlice & UISlice & CacheSlice & SettingsSlice;
+export type AppStore = ThemeSlice &
+  ProviderSlice &
+  FileTreeSlice &
+  UISlice &
+  CacheSlice &
+  SettingsSlice;
 
-function reviveSetMap(state: AppStore | undefined): Partial<AppStore> | undefined {
-  if (!state) return undefined;
-
-  const fixes: Partial<AppStore> = {};
-  const raw = state as unknown as Record<string, unknown>;
-
-  if (Array.isArray(raw.selectedPaths)) {
-    fixes.selectedPaths = new Set(raw.selectedPaths as string[]);
-  }
-  if (Array.isArray(raw.expandedPaths)) {
-    fixes.expandedPaths = new Set(raw.expandedPaths as string[]);
-  }
-  if (Array.isArray(raw.excludedPaths)) {
-    fixes.excludedPaths = new Set(raw.excludedPaths as string[]);
-  }
-  if (Array.isArray(raw.extensions)) {
-    fixes.extensions = new Map(raw.extensions as [string, { count: number; selected: boolean }][]);
-  }
-
-  return Object.keys(fixes).length > 0 ? fixes : undefined;
+interface PersistedState {
+  pat: string | null;
+  repoCache: Record<string, CachedRepoData>;
+  repoUrl: string;
+  providerType: 'github' | 'local' | null;
+  nodes: FileNode[];
+  selectedPaths: string[];
+  expandedPaths: string[];
+  excludedPaths: string[];
+  gitignorePatterns: string[];
+  extensions: [string, { count: number; selected: boolean }][];
+  outputText: string;
+  tokenCount: number;
+  lineCount: number;
 }
-
 export const useStore = create<AppStore>()(
   devtools(
     persist(
@@ -52,37 +52,32 @@ export const useStore = create<AppStore>()(
       }),
       {
         name: 'repo2txt-secure-store',
-        storage: createJSONStorage(() => chromeStorage, {
-          reviver: jsonReviver,
-          replacer: jsonReplacer,
+        storage: createJSONStorage(() => chromeStorage),
+        partialize: (state) => ({
+          pat: state.pat,
+          repoCache: state.repoCache,
+          repoUrl: state.repoUrl,
+          providerType: state.providerType,
+          nodes: state.nodes,
+          selectedPaths: Array.from(state.selectedPaths),
+          expandedPaths: Array.from(state.expandedPaths),
+          excludedPaths: Array.from(state.excludedPaths),
+          gitignorePatterns: state.gitignorePatterns,
+          extensions: Array.from(state.extensions.entries()),
+          outputText: state.outputText,
+          tokenCount: state.tokenCount,
+          lineCount: state.lineCount,
         }),
-      partialize: (state) => ({
-        pat: state.pat,
-        repoCache: state.repoCache,
-        providerType: state.providerType,
-        repoUrl: state.repoUrl,
-        repoMetadata: state.repoMetadata,
-        nodes: state.nodes,
-        selectedPaths: state.selectedPaths,
-        expandedPaths: state.expandedPaths,
-        excludedPaths: state.excludedPaths,
-        extensions: state.extensions,
-        gitignorePatterns: state.gitignorePatterns,
-        showExcludedFiles: state.showExcludedFiles,
-        outputText: state.outputText,
-        tokenCount: state.tokenCount,
-        lineCount: state.lineCount,
-        activeTab: state.activeTab,
-        showGitHubButton: state.showGitHubButton,
-        showTokenCount: state.showTokenCount,
-        showLineCount: state.showLineCount,
-        autoExpandDirectories: state.autoExpandDirectories,
-      }),
-        onRehydrateStorage: () => (state) => {
-          const fixes = reviveSetMap(state);
-          if (fixes && state) {
-            useStore.setState(fixes);
-          }
+        merge: (persistedState, currentState) => {
+          const state = persistedState as PersistedState;
+          return {
+            ...currentState,
+            ...state,
+            selectedPaths: new Set(state.selectedPaths || []),
+            expandedPaths: new Set(state.expandedPaths || []),
+            excludedPaths: new Set(state.excludedPaths || []),
+            extensions: new Map(state.extensions || []),
+          };
         },
       }
     ),

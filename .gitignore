@@ -36,3 +36,4 @@ playwright/.cache/
 
 # Build artifacts
 release/
+data/
