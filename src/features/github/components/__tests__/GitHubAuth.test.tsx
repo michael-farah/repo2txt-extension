@@ -6,11 +6,10 @@ import { useStore } from '@/store';
 
 // Mock the store - must define mock inside factory to avoid hoisting issues
 vi.mock('@/store', () => {
- const mockUseStore = vi.fn();
- mockUseStore.getState = vi.fn();
- return {
- useStore: mockUseStore,
- };
+  const mockUseStore = Object.assign(vi.fn(), { getState: vi.fn() });
+  return {
+    useStore: mockUseStore,
+  };
 });
 
 describe('GitHubAuth', () => {
