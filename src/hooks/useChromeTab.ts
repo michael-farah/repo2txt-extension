@@ -49,21 +49,16 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
             currentTabUrl !== processingState.repoUrl &&
             processingState.status === 'loaded'
           ) {
-            await chrome.storage.session.remove('processingState');
-
-            // Clear store state for the new repo
-            useStore.getState().setNodes([]);
-            useStore.getState().setTree([]);
-            useStore.getState().setGitignorePatterns([]);
-
-          setInitialUrl(currentTabUrl);
-          // We don't auto-submit the new URL, let the user click Generate
-          onNewRepoDetected?.();
-          return;
+            setInitialUrl(currentTabUrl);
+            // We don't auto-submit the new URL, let the user click Generate
+            onNewRepoDetected?.();
+            return;
           }
 
           setInitialUrl(processingState.repoUrl);
-          setAutoSubmitUrl(processingState.repoUrl);
+          if (useStore.getState().nodes.length === 0) {
+            setAutoSubmitUrl(processingState.repoUrl);
+          }
           return;
         }
 
@@ -95,11 +90,11 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
 
     const provider = new GitHubProvider();
 
-  const handleTabUpdate = async (
-    tabId: number,
-    changeInfo: { url?: string },
-    tab: chrome.tabs.Tab
-  ) => {
+    const handleTabUpdate = async (
+      tabId: number,
+      changeInfo: { url?: string },
+      tab: chrome.tabs.Tab
+    ) => {
       if (changeInfo.url && provider.validateUrl(changeInfo.url) && !isLoading) {
         // Only update if the tab is the active tab in the current window
         if (tab.active) {

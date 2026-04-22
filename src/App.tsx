@@ -5,6 +5,7 @@ import { useProviderLoader } from '@/hooks/useProviderLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { SettingsMenu } from '@/components/ui/SettingsMenu';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/Button';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
@@ -12,12 +13,8 @@ import { FileTree } from '@/components/file-tree';
 import { OutputPanel } from '@/components/OutputPanel';
 import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { useStore } from '@/store';
-import type {
-  ExtensionFilter as ExtensionFilterType,
-  FileNode,
-} from '@/types';
+import type { ExtensionFilter as ExtensionFilterType, FileNode } from '@/types';
 function App() {
-
   // Get file tree state from store
   const {
     nodes,
@@ -36,12 +33,12 @@ function App() {
     getExtensionSelectionState,
     getGlobalSelectionState,
     selectAll,
-  deselectAll,
-  setShowExcludedFiles,
-  showTokenCount,
-  showLineCount,
-  autoExpandDirectories,
-} = useStore((state) => state);
+    deselectAll,
+    setShowExcludedFiles,
+    showTokenCount,
+    showLineCount,
+    autoExpandDirectories,
+  } = useStore((state) => state);
 
   // Ref to hold output clear callback (set later after useGeneration provides setOutput)
   const clearOutputRef = useRef<() => void>(() => {});
@@ -56,12 +53,14 @@ function App() {
     handleLocalZipSubmit,
     setError,
     shouldAutoExpandRootRef,
-    resetProviderState,
+    pendingAction,
+    confirmPendingAction,
+    cancelPendingAction,
   } = useProviderLoader({
     onOutputClear: () => clearOutputRef.current(),
   });
   // Chrome tab detection
-  const { initialUrl, autoSubmitUrl, resetTabState } = useChromeTab(isLoading, () => clearOutputRef.current());
+  const { initialUrl, autoSubmitUrl } = useChromeTab(isLoading, () => clearOutputRef.current());
 
   // Build tree from nodes with current selection/expansion state
   const tree = useMemo(() => {
@@ -100,16 +99,20 @@ function App() {
     });
   }, [extensions, getExtensionSelectionState]);
 
-  // Reset all state (store + local) on provider switch
-  const resetAll = useCallback(() => {
-    resetProviderState();
-    setShowExcludedFiles(false);
-    resetTabState();
-  }, [
-    resetProviderState,
-    setShowExcludedFiles,
-    resetTabState,
-  ]);
+  // Auto-expand root directories when tree first loads
+  useEffect(() => {
+    if (tree.length > 0 && tree.length === nodes.length) {
+      const shouldExpand = autoExpandDirectories || shouldAutoExpandRootRef.current;
+      if (shouldExpand) {
+        shouldAutoExpandRootRef.current = false;
+        tree.forEach((node) => {
+          if (node.type === 'directory') {
+            toggleExpanded(node.path);
+          }
+        });
+      }
+    }
+  }, [tree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories, nodes.length]);
 
   // Auto-expand root directories when tree first loads
   useEffect(() => {
@@ -181,16 +184,16 @@ function App() {
     generateOutput: handleGenerateOutput,
     outputRef,
     setOutput,
-} = useGeneration({
-  currentProvider,
-  getSelectedNodes,
-  nodes,
-  selectedPaths,
-  excludedPaths,
-  showExcluded: showExcludedFiles,
-  getDirectorySelectionState,
-  onError: (err) => setError(err),
-});
+  } = useGeneration({
+    currentProvider,
+    getSelectedNodes,
+    nodes,
+    selectedPaths,
+    excludedPaths,
+    showExcluded: showExcludedFiles,
+    getDirectorySelectionState,
+    onError: (err) => setError(err),
+  });
   // Wire up output clear ref after setOutput is available
   useEffect(() => {
     clearOutputRef.current = () => setOutput(null);
@@ -202,15 +205,15 @@ function App() {
         <div className="flex h-12 items-center justify-between px-3">
           <div className="flex items-center gap-1.5">
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">repo2txt</h1>
-          <span className="rounded-full bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-300">
+            <span className="rounded-full bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-300">
               v2.0 Beta
             </span>
           </div>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <SettingsMenu />
-          <a
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <SettingsMenu />
+            <a
               href="https://github.com/michael-farah/repo2txt-extension"
               target="_blank"
               rel="noopener noreferrer"
@@ -238,7 +241,6 @@ function App() {
               onGitHubSubmit={handleGitHubSubmit}
               onLocalDirectorySubmit={handleLocalDirectorySubmit}
               onLocalZipSubmit={handleLocalZipSubmit}
-              onProviderChange={resetAll}
               disabled={isLoading}
               initialUrl={initialUrl}
               autoSubmitUrl={autoSubmitUrl}
@@ -257,86 +259,98 @@ function App() {
                 gitignorePatterns={gitignorePatterns}
                 onApplyGitignore={handleApplyGitignore}
                 onResetGitignore={() => setGitignorePatterns([])}
-          showExcluded={showExcludedFiles}
-          onToggleExcluded={setShowExcludedFiles}
+                showExcluded={showExcludedFiles}
+                onToggleExcluded={setShowExcludedFiles}
               />
 
-            {/* File Tree */}
-            <div className="space-y-2" data-testid="file-tree-section">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={globalCheckboxState === 'checked'}
-                      ref={(input) => {
-                        if (input) {
-                          input.indeterminate = globalCheckboxState === 'indeterminate';
-                        }
-                      }}
-                      onChange={handleGlobalToggle}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
-                      aria-label="Select all files"
-                    />
-                    <h2
-                      className="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                      data-testid="file-tree-heading"
-                    >
-                      File Tree
-                    </h2>
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isLoading && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={cancelLoad}
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleGenerateOutput}
-                    disabled={isLoading || isGenerating}
-                    data-testid="generate-output-button"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        <span>Generate</span>
-                      </>
+              {/* File Tree */}
+              <div className="space-y-2" data-testid="file-tree-section">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={globalCheckboxState === 'checked'}
+                        ref={(input) => {
+                          if (input) {
+                            input.indeterminate = globalCheckboxState === 'indeterminate';
+                          }
+                        }}
+                        onChange={handleGlobalToggle}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+                        aria-label="Select all files"
+                      />
+                      <h2
+                        className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                        data-testid="file-tree-heading"
+                      >
+                        File Tree
+                      </h2>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isLoading && (
+                      <Button variant="secondary" size="sm" onClick={cancelLoad}>
+                        Cancel
+                      </Button>
                     )}
-                  </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleGenerateOutput}
+                      disabled={isLoading || isGenerating}
+                      data-testid="generate-output-button"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="w-3.5 h-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-3.5 h-3.5 mr-1.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                          <span>Generate</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <FileTree
-                nodes={tree}
-                onToggle={toggleExpanded}
-                onSelect={toggleSelection}
+                <FileTree
+                  nodes={tree}
+                  onToggle={toggleExpanded}
+                  onSelect={toggleSelection}
                   showExcluded={showExcludedFiles}
-                maxHeight={300}
-              />
-            </div>
-          </section>
-        )}
+                  maxHeight={300}
+                />
+              </div>
+            </section>
+          )}
           {/* Output */}
- {(output || isGenerating) && (
+          {(output || isGenerating) && (
             <section ref={outputRef}>
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Output
               </h2>
-          <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} showTokenCount={showTokenCount} showLineCount={showLineCount} />
+              <OutputPanel
+                output={output}
+                isLoading={isGenerating}
+                repoName={repoName}
+                showTokenCount={showTokenCount}
+                showLineCount={showLineCount}
+              />
             </section>
           )}
         </div>
@@ -350,6 +364,16 @@ function App() {
           onClose={() => setError(null)}
           onAction={error.recovery}
           actionLabel={error.recoveryLabel}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {pendingAction && (
+        <ConfirmDialog
+          title="Replace existing tree?"
+          message={pendingAction.message}
+          onConfirm={confirmPendingAction}
+          onCancel={cancelPendingAction}
         />
       )}
     </div>
