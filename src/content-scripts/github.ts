@@ -5,6 +5,19 @@ interface GitHubRepoInfo {
   path?: string;
 }
 
+async function shouldShowGitHubButton(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.local.get('repo2txt-content-settings');
+    const settings = result['repo2txt-content-settings'];
+    if (settings && typeof settings === 'object') {
+      return (settings as { showGitHubButton?: boolean }).showGitHubButton ?? true;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Extract repository information from current GitHub page
  */
@@ -295,8 +308,15 @@ function disconnectObserver(): void {
   }
 }
 
-function init(): void {
+async function init(): Promise<void> {
   disconnectObserver();
+  const showButton = await shouldShowGitHubButton();
+  if (!showButton) {
+    // Remove existing button if present
+    const existingBtn = document.querySelector('.repo2txt-convert-btn');
+    if (existingBtn) existingBtn.remove();
+    return;
+  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -319,6 +339,14 @@ function init(): void {
 }
 
 init();
+
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes['repo2txt-content-settings']) {
+      init();
+    }
+  });
+}
 
 // Disconnect on GitHub SPA navigation to prevent observer stacking
 window.addEventListener('yt-navigate-start', disconnectObserver);

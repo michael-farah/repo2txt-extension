@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useChromeTab } from '@/hooks/useChromeTab';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useProviderLoader } from '@/hooks/useProviderLoader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { SettingsMenu } from '@/components/ui/SettingsMenu';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
 import { Button } from '@/components/ui/Button';
 import { ProviderSelector } from '@/components/ProviderSelector';
@@ -25,6 +26,7 @@ function App() {
     expandedPaths,
     extensions,
     gitignorePatterns,
+    showExcludedFiles,
     toggleSelection,
     toggleExpanded,
     toggleExtension,
@@ -34,10 +36,12 @@ function App() {
     getExtensionSelectionState,
     getGlobalSelectionState,
     selectAll,
-    deselectAll,
-  } = useStore((state) => state);
-
-  const [showExcluded, setShowExcluded] = useState(false);
+  deselectAll,
+  setShowExcludedFiles,
+  showTokenCount,
+  showLineCount,
+  autoExpandDirectories,
+} = useStore((state) => state);
 
   // Ref to hold output clear callback (set later after useGeneration provides setOutput)
   const clearOutputRef = useRef<() => void>(() => {});
@@ -96,29 +100,31 @@ function App() {
     });
   }, [extensions, getExtensionSelectionState]);
 
-  // Reset all state (store + local)
+  // Reset all state (store + local) on provider switch
   const resetAll = useCallback(() => {
     resetProviderState();
-    setShowExcluded(false);
+    setShowExcludedFiles(false);
     resetTabState();
   }, [
     resetProviderState,
-    setShowExcluded,
+    setShowExcludedFiles,
     resetTabState,
   ]);
 
-  // Auto-expand root directories for local directory uploads
+  // Auto-expand root directories when tree first loads
   useEffect(() => {
-  if (shouldAutoExpandRootRef.current && tree.length > 0) {
-    shouldAutoExpandRootRef.current = false;
-      // Expand all root-level directories
-      tree.forEach((node) => {
-        if (node.type === 'directory') {
-          toggleExpanded(node.path);
-        }
-      });
+    if (tree.length > 0 && tree.length === nodes.length) {
+      const shouldExpand = autoExpandDirectories || shouldAutoExpandRootRef.current;
+      if (shouldExpand) {
+        shouldAutoExpandRootRef.current = false;
+        tree.forEach((node) => {
+          if (node.type === 'directory') {
+            toggleExpanded(node.path);
+          }
+        });
+      }
     }
-  }, [tree, toggleExpanded, shouldAutoExpandRootRef]);
+  }, [tree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories, nodes.length]);
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
@@ -175,16 +181,16 @@ function App() {
     generateOutput: handleGenerateOutput,
     outputRef,
     setOutput,
-  } = useGeneration({
-    currentProvider,
-    getSelectedNodes,
-    nodes,
-    selectedPaths,
-    excludedPaths,
-    showExcluded,
-    getDirectorySelectionState,
-    onError: (err) => setError(err),
-  });
+} = useGeneration({
+  currentProvider,
+  getSelectedNodes,
+  nodes,
+  selectedPaths,
+  excludedPaths,
+  showExcluded: showExcludedFiles,
+  getDirectorySelectionState,
+  onError: (err) => setError(err),
+});
   // Wire up output clear ref after setOutput is available
   useEffect(() => {
     clearOutputRef.current = () => setOutput(null);
@@ -201,9 +207,10 @@ function App() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <a
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <SettingsMenu />
+          <a
               href="https://github.com/michael-farah/repo2txt-extension"
               target="_blank"
               rel="noopener noreferrer"
@@ -250,8 +257,8 @@ function App() {
                 gitignorePatterns={gitignorePatterns}
                 onApplyGitignore={handleApplyGitignore}
                 onResetGitignore={() => setGitignorePatterns([])}
-                showExcluded={showExcluded}
-                onToggleExcluded={setShowExcluded}
+          showExcluded={showExcludedFiles}
+          onToggleExcluded={setShowExcludedFiles}
               />
 
             {/* File Tree */}
@@ -317,7 +324,7 @@ function App() {
                 nodes={tree}
                 onToggle={toggleExpanded}
                 onSelect={toggleSelection}
-                showExcluded={showExcluded}
+                  showExcluded={showExcludedFiles}
                 maxHeight={300}
               />
             </div>
@@ -329,7 +336,7 @@ function App() {
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Output
               </h2>
- <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} />
+          <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} showTokenCount={showTokenCount} showLineCount={showLineCount} />
             </section>
           )}
         </div>
