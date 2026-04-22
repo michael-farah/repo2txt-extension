@@ -14,12 +14,16 @@ interface OutputPanelProps {
   output: FormattedOutput | null;
   isLoading?: boolean;
   repoName?: string;
+  showTokenCount?: boolean;
+  showLineCount?: boolean;
 }
 
 export function OutputPanel({
   output,
   isLoading = false,
   repoName = 'repo-export',
+  showTokenCount = true,
+  showLineCount = true,
 }: OutputPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<'txt' | 'md' | 'zip'>('txt');
@@ -159,20 +163,24 @@ export function OutputPanel({
       {/* Stats + Actions Row */}
       <div className="flex items-center justify-between p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-2 transition-colors">
         {/* Compact Stats Pills */}
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[11px] text-gray-500 dark:text-gray-400">Lines</span>
-<span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.lineCount.toLocaleString()}</span>
-</span>
-<span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[11px] text-gray-500 dark:text-gray-400">Tokens</span>
-<span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{output.tokenCount.toLocaleString()}</span>
-</span>
-<span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
-<span className="text-[11px] text-gray-500 dark:text-gray-400">Files</span>
-<span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.files?.length || 0}</span>
-</span>
-        </div>
+      <div className="flex items-center gap-1.5">
+        {showLineCount && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Lines</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.lineCount.toLocaleString()}</span>
+        </span>
+        )}
+        {showTokenCount && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Tokens</span>
+          <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{output.tokenCount.toLocaleString()}</span>
+        </span>
+        )}
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Files</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.files?.length || 0}</span>
+        </span>
+      </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">

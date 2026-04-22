@@ -1,19 +1,48 @@
 import type { StateStorage } from 'zustand/middleware';
 
+/**
+ * Custom JSON replacer that serializes Set and Map instances
+ * into objects with a __type__ discriminator so they can be
+ * round-tripped through JSON.stringify / JSON.parse.
+ */
+export function jsonReplacer(_key: string, value: unknown): unknown {
+  if (value instanceof Set) {
+    return { __type__: 'Set', value: Array.from(value) };
+  }
+  if (value instanceof Map) {
+    return { __type__: 'Map', value: Array.from(value.entries()) };
+  }
+  return value;
+}
+
+/**
+ * Custom JSON reviver that deserializes __type__-tagged objects
+ * back into their original Set / Map instances.
+ */
+export function jsonReviver(_key: string, value: unknown): unknown {
+  if (value !== null && typeof value === 'object' && '__type__' in (value as object)) {
+    const tagged = value as { __type__: string; value: unknown };
+    if (tagged.__type__ === 'Set' && Array.isArray(tagged.value)) {
+      return new Set(tagged.value as unknown[]);
+    }
+    if (tagged.__type__ === 'Map' && Array.isArray(tagged.value)) {
+      return new Map(tagged.value as [unknown, unknown][]);
+    }
+  }
+  return value;
+}
+
 const isChromeExtension = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
 
 const STORAGE_KEY_ID = 'repo2txt-enc-key';
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
-  const storage = isChromeExtension ? chrome.storage.local : localStorage;
-
   let rawKey: string | null;
   if (isChromeExtension) {
-    // MV3: use Promise-based chrome.storage API
-    const result = await (storage as chrome.storage.LocalStorageArea).get([STORAGE_KEY_ID]);
-    rawKey = (result as unknown)[STORAGE_KEY_ID] ?? null;
+    const result = await chrome.storage.local.get([STORAGE_KEY_ID]);
+    rawKey = (result as Record<string, string>)[STORAGE_KEY_ID] ?? null;
   } else {
-    rawKey = (storage as Storage).getItem(STORAGE_KEY_ID);
+    rawKey = localStorage.getItem(STORAGE_KEY_ID);
   }
 
   if (!rawKey) {
@@ -21,10 +50,9 @@ async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
     rawKey = Array.from(keyBytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
     if (isChromeExtension) {
-      // MV3: promise-based set
-      await (storage as chrome.storage.LocalStorageArea).set({ [STORAGE_KEY_ID]: rawKey });
+      await chrome.storage.local.set({ [STORAGE_KEY_ID]: rawKey });
     } else {
-      (storage as Storage).setItem(STORAGE_KEY_ID, rawKey);
+      localStorage.setItem(STORAGE_KEY_ID, rawKey);
     }
   }
 
@@ -91,9 +119,8 @@ export const chromeStorage: StateStorage = {
     let value: string | null = null;
 
     if (isChromeExtension) {
-      // MV3: use Promise-based get
-      const result = await (chrome.storage.local as unknown).get([name]);
-      value = (result as unknown)[name] ?? null;
+      const result = await chrome.storage.local.get([name]);
+      value = (result as Record<string, string>)[name] ?? null;
     } else {
       value = localStorage.getItem(name);
     }
@@ -113,7 +140,7 @@ export const chromeStorage: StateStorage = {
     }
 
     if (isChromeExtension) {
-      await (chrome.storage.local as unknown).set({ [name]: finalValue });
+      await chrome.storage.local.set({ [name]: finalValue });
     } else {
       localStorage.setItem(name, finalValue);
     }
@@ -121,7 +148,7 @@ export const chromeStorage: StateStorage = {
 
   removeItem: async (name: string): Promise<void> => {
     if (isChromeExtension) {
-      await (chrome.storage.local as unknown).remove([name]);
+      await chrome.storage.local.remove([name]);
     } else {
       localStorage.removeItem(name);
     }

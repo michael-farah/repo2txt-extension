@@ -11,6 +11,7 @@ import type {
   ProviderType,
   FileNode,
   FileContent,
+  FetchOptions,
   FileSystemDirectoryHandle,
   FileSystemFileHandle,
 } from '@/types';
@@ -119,10 +120,6 @@ export class LocalProvider extends BaseProvider {
    * Fetch tree from local files
    */
   async fetchTree(_url?: string, _options?: FetchOptions): Promise<FileNode[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _u = _url;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _o = _options;
     if (!this.options) {
       throw new ProviderError(
         'Provider not initialized',

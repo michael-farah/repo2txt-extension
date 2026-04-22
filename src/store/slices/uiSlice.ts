@@ -1,17 +1,22 @@
 import type { StateCreator } from 'zustand';
 
+export type ActiveTab = 'github' | 'local' | 'directory' | 'zip';
+
 export interface UISlice {
   outputText: string;
   tokenCount: number;
   lineCount: number;
   isGenerating: boolean;
   showExcludedFiles: boolean;
+  activeTab: ActiveTab;
 
   setOutputText: (text: string) => void;
   setTokenCount: (count: number) => void;
   setLineCount: (count: number) => void;
   setGenerating: (isGenerating: boolean) => void;
   toggleShowExcludedFiles: () => void;
+  setShowExcludedFiles: (show: boolean) => void;
+  setActiveTab: (tab: ActiveTab) => void;
   reset: () => void;
 }
 
@@ -21,6 +26,7 @@ const initialState = {
   lineCount: 0,
   isGenerating: false,
   showExcludedFiles: false,
+  activeTab: 'github' as ActiveTab,
 };
 
 export const createUISlice: StateCreator<UISlice> = (set, get) => ({
@@ -38,6 +44,10 @@ export const createUISlice: StateCreator<UISlice> = (set, get) => ({
     const { showExcludedFiles } = get();
     set({ showExcludedFiles: !showExcludedFiles });
   },
+
+  setShowExcludedFiles: (show: boolean) => set({ showExcludedFiles: show }),
+
+  setActiveTab: (tab: ActiveTab) => set({ activeTab: tab }),
 
   reset: () => set(initialState),
 });

@@ -51,7 +51,7 @@ export interface IProvider {
    * @param nodes - Array of file nodes to fetch
    * @returns Async generator yielding file contents
    */
-  fetchMultiple(nodes: FileNode[]): AsyncGenerator<FileContent, void, unknown>;
+  fetchMultiple(nodes: FileNode[], signal?: AbortSignal): AsyncGenerator<FileContent, void, unknown>;
 
   /**
    * Get metadata about the current repository

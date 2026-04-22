@@ -95,11 +95,11 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
 
     const provider = new GitHubProvider();
 
-    const handleTabUpdate = async (
-      tabId: number,
-      changeInfo: chrome.tabs.TabChangeInfo,
-      tab: chrome.tabs.Tab
-    ) => {
+  const handleTabUpdate = async (
+    tabId: number,
+    changeInfo: { url?: string },
+    tab: chrome.tabs.Tab
+  ) => {
       if (changeInfo.url && provider.validateUrl(changeInfo.url) && !isLoading) {
         // Only update if the tab is the active tab in the current window
         if (tab.active) {
@@ -116,7 +116,7 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
       }
     };
 
-    const handleTabActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+    const handleTabActivated = async (activeInfo: { tabId: number; windowId: number }) => {
       try {
         // Only update if the activated tab is in the current window
         const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });

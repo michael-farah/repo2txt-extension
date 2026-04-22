@@ -1,9 +1,4 @@
-/**
- * Complete local upload form component
- * Combines directory picker and zip uploader with tabs
- */
-
-import { useState } from 'react';
+import { useStore, type ActiveTab } from '@/store';
 import { DirectoryPicker } from './DirectoryPicker';
 import { ZipUploader } from './ZipUploader';
 
@@ -12,24 +7,22 @@ import type { FileSystemDirectoryHandle } from '@/types';
 interface LocalFormProps {
   onDirectorySelected?: (files: FileList | FileSystemDirectoryHandle) => void;
   onZipSelected?: (file: File) => void;
-  onTabChange?: (tab: TabType) => void;
   disabled?: boolean;
 }
-
-type TabType = 'directory' | 'zip';
 
 export function LocalForm({
   onDirectorySelected,
   onZipSelected,
-  onTabChange,
   disabled,
 }: LocalFormProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('directory');
+  const activeTab = useStore((s) => s.activeTab);
+  const setActiveTab = useStore((s) => s.setActiveTab);
 
-  const handleTabChange = (tab: TabType) => {
-    if (tab !== activeTab) {
-      setActiveTab(tab);
-      onTabChange?.(tab);
+  const localTab = activeTab === 'zip' ? 'zip' : 'directory';
+
+  const handleTabChange = (tab: 'directory' | 'zip') => {
+    if (tab !== localTab) {
+      setActiveTab(tab as ActiveTab);
     }
   };
 
@@ -41,13 +34,13 @@ export function LocalForm({
           onClick={() => handleTabChange('directory')}
           data-testid="local-tab-directory"
           className={`
-            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
-            ${
-              activeTab === 'directory'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }
-          `}
+          flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
+          ${
+            localTab === 'directory'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+          }
+        `}
         >
           <svg
             className="inline w-4 h-4 mr-2"
@@ -68,13 +61,13 @@ export function LocalForm({
           onClick={() => handleTabChange('zip')}
           data-testid="local-tab-zip"
           className={`
-            flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
-            ${
-              activeTab === 'zip'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-            }
-          `}
+          flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
+          ${
+            localTab === 'zip'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+          }
+        `}
         >
           <svg
             className="inline w-4 h-4 mr-2"
@@ -95,7 +88,7 @@ export function LocalForm({
 
       {/* Tab content */}
       <div>
-        {activeTab === 'directory' ? (
+        {localTab === 'directory' ? (
           <DirectoryPicker onDirectorySelected={onDirectorySelected} disabled={disabled} />
         ) : (
           <ZipUploader onFileSelected={onZipSelected} disabled={disabled} />
