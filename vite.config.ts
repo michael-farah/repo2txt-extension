@@ -19,7 +19,7 @@ export default defineConfig({
   },
   build: {
     target: 'chrome120',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
