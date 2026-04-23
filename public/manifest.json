@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "repo2txt",
-  "version": "2.0.0",
-  "description": "Convert GitHub repositories and local folders to plain text for LLM prompts. Chrome extension by Michael Farah.",
+  "version": "1.0.0",
+  "description": "Browser extension to convert repositories to LLM-ready text",
   "homepage_url": "https://github.com/michael-farah/repo2txt-extension",
   "icons": {
     "16": "icons/icon16.png",
@@ -24,7 +24,7 @@
     "service_worker": "background/index.js",
     "type": "module"
   },
-  "permissions": ["storage", "clipboardWrite", "activeTab", "scripting", "downloads"],
+  "permissions": ["storage", "clipboardWrite", "activeTab", "scripting", "downloads", "tabs"],
   "host_permissions": [
     "https://api.github.com/*",
     "https://github.com/*",
