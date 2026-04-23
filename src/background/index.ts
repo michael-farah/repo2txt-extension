@@ -100,100 +100,96 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-/**
- * Handle GITHUB_WEB_FETCH - fetch github.com pages from the service worker.
- * Chrome MV3 service workers can use fetch() with credentials: 'include' when
- * the extension has host_permissions for the target domain. This allows
- * fetching GitHub pages with the user's _gh_sess cookie included.
- */
-if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
-  const { url, requestId } = message as { url: string; requestId?: string };
+  /**
+   * Handle GITHUB_WEB_FETCH - fetch github.com pages from the service worker.
+   * Chrome MV3 service workers can use fetch() with credentials: 'include' when
+   * the extension has host_permissions for the target domain. This allows
+   * fetching GitHub pages with the user's _gh_sess cookie included.
+   */
+  if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
+    const { url, requestId } = message as { url: string; requestId?: string };
 
-  // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
-  // Using URL parsing to prevent bypasses like github.com.evil.com or github.com@evil.com
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    sendResponse({
-      success: false,
-      status: 0,
-      html: '',
-      error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
-    });
-    return true;
-  }
-
-  const allowedHosts = ['github.com', 'raw.githubusercontent.com'];
-  if (parsedUrl.protocol !== 'https:' || !allowedHosts.includes(parsedUrl.hostname)) {
-    sendResponse({
-      success: false,
-      status: 0,
-      html: '',
-      error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
-    });
-    return true;
-  }
-
-  console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url}`);
-
-  // Create AbortController for this request
-  const controller = new AbortController();
-  if (requestId) {
-    pendingRequests.set(requestId, controller);
-  }
-
-  fetch(url, { credentials: 'include', signal: controller.signal })
-    .then(async (response) => {
-      const html = await response.text();
-      console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
+    // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
+    // Using URL parsing to prevent bypasses like github.com.evil.com or github.com@evil.com
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
       sendResponse({
-        success: response.ok,
-        status: response.status,
-        html,
+        success: false,
+        status: 0,
+        html: '',
+        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
       });
-    })
-    .catch((error: Error) => {
-      if (error.name === 'AbortError') {
-        console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → aborted`);
-        sendResponse({
-          success: false,
-          status: 0,
-          html: '',
-          error: 'Request aborted',
-        });
-      } else {
-        console.error('repo2txt: Failed to fetch GitHub page:', error);
-        sendResponse({
-          success: false,
-          status: 0,
-          html: '',
-          error: error.message,
-        });
-      }
-    })
-    .finally(() => {
-      // Clean up the pending request
-      if (requestId) {
-        pendingRequests.delete(requestId);
-      }
-    });
+      return true;
+    }
 
-  return true;
-}
+    const allowedHosts = ['github.com', 'raw.githubusercontent.com'];
+    if (parsedUrl.protocol !== 'https:' || !allowedHosts.includes(parsedUrl.hostname)) {
+      sendResponse({
+        success: false,
+        status: 0,
+        html: '',
+        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
+      });
+      return true;
+    }
 
-// Handle ABORT_GITHUB_FETCH - cancel a pending request
-if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
-  const controller = pendingRequests.get(message.requestId);
-  if (controller) {
-    controller.abort();
-    pendingRequests.delete(message.requestId);
-    sendResponse({ success: true });
-  } else {
-    sendResponse({ success: false, error: 'Request not found' });
+    // Create AbortController for this request
+    const controller = new AbortController();
+    if (requestId) {
+      pendingRequests.set(requestId, controller);
+    }
+
+    fetch(url, { credentials: 'include', signal: controller.signal })
+      .then(async (response) => {
+        const html = await response.text();
+        sendResponse({
+          success: response.ok,
+          status: response.status,
+          html,
+        });
+      })
+      .catch((error: Error) => {
+        if (error.name === 'AbortError') {
+          sendResponse({
+            success: false,
+            status: 0,
+            html: '',
+            error: 'Request aborted',
+          });
+        } else {
+          console.error('repo2txt: Failed to fetch GitHub page:', error);
+          sendResponse({
+            success: false,
+            status: 0,
+            html: '',
+            error: error.message,
+          });
+        }
+      })
+      .finally(() => {
+        // Clean up the pending request
+        if (requestId) {
+          pendingRequests.delete(requestId);
+        }
+      });
+
+    return true;
   }
-  return true;
-}
+
+  // Handle ABORT_GITHUB_FETCH - cancel a pending request
+  if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
+    const controller = pendingRequests.get(message.requestId);
+    if (controller) {
+      controller.abort();
+      pendingRequests.delete(message.requestId);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false, error: 'Request not found' });
+    }
+    return true;
+  }
 });
 
 // Listen for session storage changes to manage badge

@@ -236,7 +236,6 @@ function injectButton(): void {
   // Find container
   const container = findButtonContainer();
   if (!container) {
-    console.log('repo2txt: Could not find button container');
     return;
   }
 
@@ -283,7 +282,6 @@ function injectButton(): void {
 
   // Insert button
   container.appendChild(button);
-  console.log('repo2txt: Button injected successfully');
 }
 
 let observer: MutationObserver | null = null;
