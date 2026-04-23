@@ -114,21 +114,6 @@ function App() {
     }
   }, [tree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories, nodes.length]);
 
-  // Auto-expand root directories when tree first loads
-  useEffect(() => {
-    if (tree.length > 0 && tree.length === nodes.length) {
-      const shouldExpand = autoExpandDirectories || shouldAutoExpandRootRef.current;
-      if (shouldExpand) {
-        shouldAutoExpandRootRef.current = false;
-        tree.forEach((node) => {
-          if (node.type === 'directory') {
-            toggleExpanded(node.path);
-          }
-        });
-      }
-    }
-  }, [tree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories, nodes.length]);
-
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(
     (extension: string) => {
@@ -206,7 +191,7 @@ function App() {
           <div className="flex items-center gap-1.5">
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">repo2txt</h1>
             <span className="rounded-full bg-primary-100 dark:bg-primary-900 px-1.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:text-primary-300">
-              v2.0 Beta
+              v1 Beta
             </span>
           </div>
 
