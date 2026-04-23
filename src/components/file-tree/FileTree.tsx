@@ -60,7 +60,7 @@ export function FileTree({
   const flatNodes = useMemo(() => flattenTree(nodes, showExcluded), [nodes, showExcluded]);
 
   // Virtual scrolling
-      // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual's useVirtualizer returns functions that cannot be memoized; this is expected and safe
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual's useVirtualizer returns functions that cannot be memoized; this is expected and safe
   const virtualizer = useVirtualizer({
     count: flatNodes.length,
     getScrollElement: () => parentRef.current,

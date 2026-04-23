@@ -20,9 +20,7 @@ function ToggleSetting({ label, description, checked, onChange }: ToggleSettingP
       className="flex items-center justify-between w-full gap-3 rounded-md px-2 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
     >
       <div className="flex flex-col items-start min-w-0">
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
         {description && (
           <span className="text-xs text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
             {description}
@@ -32,9 +30,7 @@ function ToggleSetting({ label, description, checked, onChange }: ToggleSettingP
       <span
         className={cn(
           'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ease-in-out',
-          checked
-            ? 'bg-primary-600 dark:bg-primary-500'
-            : 'bg-gray-300 dark:bg-gray-600'
+          checked ? 'bg-primary-600 dark:bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
         )}
       >
         <span

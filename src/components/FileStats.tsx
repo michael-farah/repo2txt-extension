@@ -25,9 +25,7 @@ export function FileStats({ files }: FileStatsProps) {
   }
 
   // Sort by token count (descending)
-  const sortedFiles = [...filesWithStats].sort(
-    (a, b) => (b.tokenCount || 0) - (a.tokenCount || 0)
-  );
+  const sortedFiles = [...filesWithStats].sort((a, b) => (b.tokenCount || 0) - (a.tokenCount || 0));
 
   const totalTokens = sortedFiles.reduce((sum, f) => sum + (f.tokenCount || 0), 0);
   const totalLines = sortedFiles.reduce((sum, f) => sum + (f.lineCount || 0), 0);
@@ -43,15 +41,15 @@ export function FileStats({ files }: FileStatsProps) {
           <div className="flex items-center gap-3">
             <h3 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Files</h3>
             <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
                 {sortedFiles.length} files
               </span>
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">•</span>
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">•</span>
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
                 {totalLines.toLocaleString()} lines
               </span>
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">•</span>
-                  <span className="text-[11px] text-primary-600 dark:text-primary-400">
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">•</span>
+              <span className="text-[11px] text-primary-600 dark:text-primary-400">
                 {totalTokens.toLocaleString()} tokens
               </span>
             </div>
@@ -64,18 +62,15 @@ export function FileStats({ files }: FileStatsProps) {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </button>
 
       {/* Collapsible per-file details */}
-      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
         <div className="overflow-hidden">
           <div className="px-2 pb-2 border-t border-gray-200 dark:border-gray-700">
             <div className="space-y-0.5 max-h-48 overflow-y-auto pt-2">
@@ -107,7 +102,7 @@ export function FileStats({ files }: FileStatsProps) {
             </div>
           </div>
         </div>
-    </div>
+      </div>
     </div>
   );
 }

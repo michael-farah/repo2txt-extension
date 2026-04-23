@@ -33,20 +33,10 @@ export function ExtensionFilter({
 
       {/* Batch actions */}
       <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onSelectAll}
-          className="flex-1"
-        >
+        <Button variant="secondary" size="sm" onClick={onSelectAll} className="flex-1">
           Select All
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onDeselectAll}
-          className="flex-1"
-        >
+        <Button variant="secondary" size="sm" onClick={onDeselectAll} className="flex-1">
           Deselect All
         </Button>
       </div>
@@ -80,9 +70,7 @@ export function ExtensionFilter({
                     {ext.extension}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {ext.count}
-                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{ext.count}</span>
               </label>
             ))}
           </div>

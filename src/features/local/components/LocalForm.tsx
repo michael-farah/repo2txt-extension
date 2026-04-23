@@ -10,11 +10,7 @@ interface LocalFormProps {
   disabled?: boolean;
 }
 
-export function LocalForm({
-  onDirectorySelected,
-  onZipSelected,
-  disabled,
-}: LocalFormProps) {
+export function LocalForm({ onDirectorySelected, onZipSelected, disabled }: LocalFormProps) {
   const activeTab = useStore((s) => s.activeTab);
   const setActiveTab = useStore((s) => s.setActiveTab);
 

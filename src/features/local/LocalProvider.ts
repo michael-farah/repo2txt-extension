@@ -174,7 +174,12 @@ export class LocalProvider extends BaseProvider {
       }
 
       let actualFile: File;
-      if ('kind' in file && file.kind === 'file' && 'getFile' in file && typeof file.getFile === 'function') {
+      if (
+        'kind' in file &&
+        file.kind === 'file' &&
+        'getFile' in file &&
+        typeof file.getFile === 'function'
+      ) {
         try {
           actualFile = await file.getFile();
         } catch {

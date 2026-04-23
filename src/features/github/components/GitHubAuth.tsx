@@ -29,21 +29,21 @@ export function GitHubAuth() {
     const newToken = e.target.value;
     setToken(newToken);
 
- // Save to store
- if (newToken) {
- setCredentials({ token: newToken });
- setPAT(newToken);
- } else {
- setCredentials({ token: undefined });
- clearPAT();
- }
+    // Save to store
+    if (newToken) {
+      setCredentials({ token: newToken });
+      setPAT(newToken);
+    } else {
+      setCredentials({ token: undefined });
+      clearPAT();
+    }
   };
 
- const handleClearToken = () => {
- setToken('');
- setCredentials({ token: undefined });
- clearPAT();
- };
+  const handleClearToken = () => {
+    setToken('');
+    setCredentials({ token: undefined });
+    clearPAT();
+  };
 
   return (
     <div className="space-y-1.5">
@@ -79,9 +79,10 @@ export function GitHubAuth() {
 
       {showInfo && (
         <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-2 text-xs">
- <p className="text-blue-800 dark:text-blue-200 mb-1">
- Required for private repos & higher rate limits. For private repos, you can also use session mode (no token needed if you're logged into GitHub in your browser).
- </p>
+          <p className="text-blue-800 dark:text-blue-200 mb-1">
+            Required for private repos & higher rate limits. For private repos, you can also use
+            session mode (no token needed if you're logged into GitHub in your browser).
+          </p>
           <a
             href="https://github.com/settings/tokens/new?description=repo2txt-extension&scopes=repo"
             target="_blank"

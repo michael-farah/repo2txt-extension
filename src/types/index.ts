@@ -36,8 +36,8 @@ export interface ProviderCredentials {
 }
 
 export interface FetchOptions {
-branch?: string;
-path?: string;
+  branch?: string;
+  path?: string;
   credentials?: ProviderCredentials;
   signal?: AbortSignal;
 }

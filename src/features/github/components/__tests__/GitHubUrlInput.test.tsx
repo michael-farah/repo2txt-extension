@@ -195,45 +195,49 @@ describe('GitHubUrlInput', () => {
   });
 });
 
-  it('updates input when initialUrl prop changes after mount', async () => {
-    const { rerender } = render(<GitHubUrlInput />);
+it('updates input when initialUrl prop changes after mount', async () => {
+  const { rerender } = render(<GitHubUrlInput />);
 
-    const input = screen.getByPlaceholderText('https://github.com/facebook/react') as HTMLInputElement;
-    expect(input.value).toBe('');
+  const input = screen.getByPlaceholderText(
+    'https://github.com/facebook/react'
+  ) as HTMLInputElement;
+  expect(input.value).toBe('');
 
-    rerender(<GitHubUrlInput initialUrl="https://github.com/foo/bar" />);
+  rerender(<GitHubUrlInput initialUrl="https://github.com/foo/bar" />);
 
-    await waitFor(() => {
-      expect(input.value).toBe('https://github.com/foo/bar');
-    });
-  });
-
-  it('fires onUrlChange with isValid=true when initialUrl syncs a valid URL', async () => {
-    const onUrlChange = vi.fn();
-    const { rerender } = render(<GitHubUrlInput onUrlChange={onUrlChange} />);
-
-    rerender(<GitHubUrlInput onUrlChange={onUrlChange} initialUrl="https://github.com/foo/bar" />);
-
-    await waitFor(() => {
-      expect(onUrlChange).toHaveBeenCalledWith('https://github.com/foo/bar', true);
-    });
-  });
-
-  it('does not clear input when initialUrl changes to undefined (user typing scenario)', async () => {
-    const onUrlChange = vi.fn();
-    const { rerender } = render(
-      <GitHubUrlInput onUrlChange={onUrlChange} initialUrl="https://github.com/foo/bar" />
-    );
-
-    const input = screen.getByPlaceholderText('https://github.com/facebook/react') as HTMLInputElement;
-    await waitFor(() => {
-      expect(input.value).toBe('https://github.com/foo/bar');
-    });
-
-    // Simulate parent re-render where initialUrl becomes undefined
-    // (e.g. user is typing and parent no longer controls the URL)
-    rerender(<GitHubUrlInput onUrlChange={onUrlChange} />);
-
-    // Input should retain its value, not be cleared
+  await waitFor(() => {
     expect(input.value).toBe('https://github.com/foo/bar');
   });
+});
+
+it('fires onUrlChange with isValid=true when initialUrl syncs a valid URL', async () => {
+  const onUrlChange = vi.fn();
+  const { rerender } = render(<GitHubUrlInput onUrlChange={onUrlChange} />);
+
+  rerender(<GitHubUrlInput onUrlChange={onUrlChange} initialUrl="https://github.com/foo/bar" />);
+
+  await waitFor(() => {
+    expect(onUrlChange).toHaveBeenCalledWith('https://github.com/foo/bar', true);
+  });
+});
+
+it('does not clear input when initialUrl changes to undefined (user typing scenario)', async () => {
+  const onUrlChange = vi.fn();
+  const { rerender } = render(
+    <GitHubUrlInput onUrlChange={onUrlChange} initialUrl="https://github.com/foo/bar" />
+  );
+
+  const input = screen.getByPlaceholderText(
+    'https://github.com/facebook/react'
+  ) as HTMLInputElement;
+  await waitFor(() => {
+    expect(input.value).toBe('https://github.com/foo/bar');
+  });
+
+  // Simulate parent re-render where initialUrl becomes undefined
+  // (e.g. user is typing and parent no longer controls the URL)
+  rerender(<GitHubUrlInput onUrlChange={onUrlChange} />);
+
+  // Input should retain its value, not be cleared
+  expect(input.value).toBe('https://github.com/foo/bar');
+});
