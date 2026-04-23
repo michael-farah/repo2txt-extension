@@ -9,7 +9,7 @@ export interface CachedRepoData {
 
 export interface CacheSlice {
   repoCache: Record<string, CachedRepoData>;
-  
+
   setCachedRepo: (repoUrl: string, data: FileNode[], fileTree: TreeNode[]) => void;
   getCachedRepo: (repoUrl: string) => CachedRepoData | null;
   clearCache: (repoUrl?: string) => void;

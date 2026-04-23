@@ -47,9 +47,7 @@ describe('ZipUploader', () => {
 
     fireEvent.change(input);
 
-    expect(
-      await screen.findByText(/Unsupported format/)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Unsupported format/)).toBeInTheDocument();
   });
 
   it('should show error for large files', async () => {

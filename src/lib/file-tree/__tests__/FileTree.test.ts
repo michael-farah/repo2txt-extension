@@ -145,7 +145,9 @@ describe('FileTree', () => {
 
       const visible = filtered.getVisibleNodes();
       const extensions = ['.tsx', '.ts', ''];
-      expect(visible.every((n) => extensions.includes(n.getExtension()) || n.isDirectory())).toBe(true);
+      expect(visible.every((n) => extensions.includes(n.getExtension()) || n.isDirectory())).toBe(
+        true
+      );
     });
   });
 

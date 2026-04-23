@@ -39,52 +39,64 @@ interface PersistedState {
   tokenCount: number;
   lineCount: number;
 }
+const persistConfig = {
+  name: 'repo2txt-secure-store',
+  storage: createJSONStorage(() => chromeStorage),
+  partialize: (state: AppStore) => ({
+    pat: state.pat,
+    repoCache: state.repoCache,
+    repoUrl: state.repoUrl,
+    providerType: state.providerType,
+    nodes: state.nodes,
+    selectedPaths: Array.from(state.selectedPaths),
+    expandedPaths: Array.from(state.expandedPaths),
+    excludedPaths: Array.from(state.excludedPaths),
+    gitignorePatterns: state.gitignorePatterns,
+    extensions: Array.from(state.extensions.entries()),
+    outputText: state.outputText,
+    tokenCount: state.tokenCount,
+    lineCount: state.lineCount,
+  }),
+  merge: (persistedState: unknown, currentState: AppStore) => {
+    const state = persistedState as PersistedState;
+    return {
+      ...currentState,
+      ...state,
+      selectedPaths: new Set(state.selectedPaths || []),
+      expandedPaths: new Set(state.expandedPaths || []),
+      excludedPaths: new Set(state.excludedPaths || []),
+      extensions: new Map(state.extensions || []),
+    };
+  },
+};
+
 export const useStore = create<AppStore>()(
-  devtools(
-    persist(
-      (...a) => ({
-        ...createThemeSlice(...a),
-        ...createProviderSlice(...a),
-        ...createFileTreeSlice(...a),
-        ...createUISlice(...a),
-        ...createSettingsSlice(...a),
-        ...createCacheSlice(...a),
-      }),
-      {
-        name: 'repo2txt-secure-store',
-        storage: createJSONStorage(() => chromeStorage),
-        partialize: (state) => ({
-          pat: state.pat,
-          repoCache: state.repoCache,
-          repoUrl: state.repoUrl,
-          providerType: state.providerType,
-          nodes: state.nodes,
-          selectedPaths: Array.from(state.selectedPaths),
-          expandedPaths: Array.from(state.expandedPaths),
-          excludedPaths: Array.from(state.excludedPaths),
-          gitignorePatterns: state.gitignorePatterns,
-          extensions: Array.from(state.extensions.entries()),
-          outputText: state.outputText,
-          tokenCount: state.tokenCount,
-          lineCount: state.lineCount,
+  import.meta.env.DEV
+    ? devtools(
+        persist(
+          (...a) => ({
+            ...createThemeSlice(...a),
+            ...createProviderSlice(...a),
+            ...createFileTreeSlice(...a),
+            ...createUISlice(...a),
+            ...createSettingsSlice(...a),
+            ...createCacheSlice(...a),
+          }),
+          persistConfig
+        ),
+        { name: 'repo2txt-store' }
+      )
+    : persist(
+        (...a) => ({
+          ...createThemeSlice(...a),
+          ...createProviderSlice(...a),
+          ...createFileTreeSlice(...a),
+          ...createUISlice(...a),
+          ...createSettingsSlice(...a),
+          ...createCacheSlice(...a),
         }),
-        merge: (persistedState, currentState) => {
-          const state = persistedState as PersistedState;
-          return {
-            ...currentState,
-            ...state,
-            selectedPaths: new Set(state.selectedPaths || []),
-            expandedPaths: new Set(state.expandedPaths || []),
-            excludedPaths: new Set(state.excludedPaths || []),
-            extensions: new Map(state.extensions || []),
-          };
-        },
-      }
-    ),
-    {
-      name: 'repo2txt-store',
-    }
-  )
+        persistConfig
+      )
 );
 
 // Export individual slices for convenience

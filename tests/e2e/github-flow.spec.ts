@@ -17,7 +17,7 @@ test.describe('GitHub Flow', () => {
   test('should complete full GitHub public repo flow', async ({ page }) => {
     // Step 1: Verify initial state
     await expect(page.getByRole('heading', { name: 'repo2txt' })).toBeVisible();
-    await expect(page.getByText('v2.0 Beta')).toBeVisible();
+  await expect(page.getByText('v1 Beta')).toBeVisible();
 
     // Step 2: Enter GitHub URL
     const urlInput = page.getByPlaceholder('https://github.com/facebook/react');

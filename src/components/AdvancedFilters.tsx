@@ -47,7 +47,9 @@ export function AdvancedFilters({
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Advanced Filters
           </h3>
-        <span className="text-[11px] text-gray-500 dark:text-gray-400">Extension & Gitignore</span>
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">
+            Extension & Gitignore
+          </span>
         </div>
         <svg
           className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
@@ -62,7 +64,9 @@ export function AdvancedFilters({
       </button>
 
       {/* Content */}
-      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
         <div className="overflow-hidden">
           <div className="p-2 border-t border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 gap-3">
@@ -95,7 +99,7 @@ export function AdvancedFilters({
             </div>
           </div>
         </div>
-    </div>
+      </div>
     </div>
   );
 }

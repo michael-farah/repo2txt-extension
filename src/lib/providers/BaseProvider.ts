@@ -83,7 +83,10 @@ export abstract class BaseProvider implements IProvider {
     }
   }
 
-  async *fetchMultiple(nodes: FileNode[], signal?: AbortSignal): AsyncGenerator<FileContent, void, unknown> {
+  async *fetchMultiple(
+    nodes: FileNode[],
+    signal?: AbortSignal
+  ): AsyncGenerator<FileContent, void, unknown> {
     const { maxConcurrent, delayMs } = this.rateLimiter;
 
     for (let i = 0; i < nodes.length; i += maxConcurrent) {

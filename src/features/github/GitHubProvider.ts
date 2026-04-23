@@ -41,87 +41,82 @@ export class GitHubProvider extends BaseProvider {
    * This sends GITHUB_WEB_FETCH messages that use github.com web endpoints
    */
   /**
- * Fetch a URL using the background script's session-authenticated fetch
- * This sends GITHUB_WEB_FETCH messages that use github.com web endpoints
- */
-private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
-  let response: { success: boolean; status: number; html: string; error?: string } | undefined;
+   * Fetch a URL using the background script's session-authenticated fetch
+   * This sends GITHUB_WEB_FETCH messages that use github.com web endpoints
+   */
+  private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
+    let response: { success: boolean; status: number; html: string; error?: string } | undefined;
 
-  // Check if aborted before starting
-  if (signal?.aborted) {
-    throw new Error('AbortError');
-  }
+    // Check if aborted before starting
+    if (signal?.aborted) {
+      throw new Error('AbortError');
+    }
 
-  try {
-    response = await chrome.runtime.sendMessage({
-      type: 'GITHUB_WEB_FETCH',
-      url,
-      requestId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    });
-  } catch {
-    throw new ProviderError(
-      'Extension context unavailable',
-      ErrorCode.PROVIDER_ERROR,
-      'Could not communicate with the extension background script. Please reload the extension popup and try again.'
-    );
-  }
-
-  if (!response) {
-    throw new ProviderError(
-      'Extension context unavailable',
-      ErrorCode.PROVIDER_ERROR,
-      'Could not communicate with the extension background script. Please reload the extension popup and try again.'
-    );
-  }
-
-  // Check if aborted after the call
-  if (signal?.aborted) {
-    throw new Error('AbortError');
-  }
-
-  // Add diagnostic logging for successful responses
-  if (response.success) {
-    console.debug(`[repo2txt] sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
-  }
-
-  if (!response.success) {
-    if (response.status === 429) {
+    try {
+      response = await chrome.runtime.sendMessage({
+        type: 'GITHUB_WEB_FETCH',
+        url,
+        requestId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      });
+    } catch {
       throw new ProviderError(
-        'GitHub rate limit reached',
-        ErrorCode.RATE_LIMITED,
-        'GitHub rate limit reached while using session mode. Large repositories may require a Personal Access Token. Please wait a moment and try again.'
+        'Extension context unavailable',
+        ErrorCode.PROVIDER_ERROR,
+        'Could not communicate with the extension background script. Please reload the extension popup and try again.'
       );
     }
 
-    if (response.status === 401) {
+    if (!response) {
       throw new ProviderError(
-        'GitHub authentication required',
-        ErrorCode.AUTH_REQUIRED,
-        'You need to be logged into GitHub in your browser to access this repository. Please log into GitHub and try again, or add a Personal Access Token.'
+        'Extension context unavailable',
+        ErrorCode.PROVIDER_ERROR,
+        'Could not communicate with the extension background script. Please reload the extension popup and try again.'
       );
     }
 
-    if (response.status === 403) {
-      throw new ProviderError(
-        'GitHub access denied',
-        ErrorCode.AUTH_REQUIRED,
-        'Access to this repository was denied. Make sure you are logged into GitHub in your browser and have access to this repository, or add a Personal Access Token with repo scope.'
-      );
+    // Check if aborted after the call
+    if (signal?.aborted) {
+      throw new Error('AbortError');
     }
 
-    if (response.status === 404) {
-      throw new ProviderError(
-        'Repository not found',
-        ErrorCode.NOT_FOUND,
-        "Repository not found. It may be private and you don't have access, or the URL may be incorrect. Make sure you are logged into GitHub in your browser, or add a Personal Access Token."
-      );
+    if (!response.success) {
+      if (response.status === 429) {
+        throw new ProviderError(
+          'GitHub rate limit reached',
+          ErrorCode.RATE_LIMITED,
+          'GitHub rate limit reached while using session mode. Large repositories may require a Personal Access Token. Please wait a moment and try again.'
+        );
+      }
+
+      if (response.status === 401) {
+        throw new ProviderError(
+          'GitHub authentication required',
+          ErrorCode.AUTH_REQUIRED,
+          'You need to be logged into GitHub in your browser to access this repository. Please log into GitHub and try again, or add a Personal Access Token.'
+        );
+      }
+
+      if (response.status === 403) {
+        throw new ProviderError(
+          'GitHub access denied',
+          ErrorCode.AUTH_REQUIRED,
+          'Access to this repository was denied. Make sure you are logged into GitHub in your browser and have access to this repository, or add a Personal Access Token with repo scope.'
+        );
+      }
+
+      if (response.status === 404) {
+        throw new ProviderError(
+          'Repository not found',
+          ErrorCode.NOT_FOUND,
+          "Repository not found. It may be private and you don't have access, or the URL may be incorrect. Make sure you are logged into GitHub in your browser, or add a Personal Access Token."
+        );
+      }
+
+      throw new Error(`HTTP ${response.status}: ${response.error || 'Session fetch failed'}`);
     }
 
-    throw new Error(`HTTP ${response.status}: ${response.error || 'Session fetch failed'}`);
+    return response.html;
   }
-
-  return response.html;
-}
 
   /**
    * Parse a GitHub repo/directory page to extract file listing and default branch
@@ -281,15 +276,17 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
               type: linkType === 'tree' ? 'directory' : 'file',
               path: path.trim(),
             });
- }
- }
- }
+          }
+        }
+      }
 
- // Log when DOM fallback is used
- if (files.length === 0) {
- console.warn('[repo2txt] parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback');
- }
- }
+      // Log when DOM fallback is used
+      if (files.length === 0) {
+        console.warn(
+          '[repo2txt] parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback'
+        );
+      }
+    }
 
     // Extract default branch from branch selector button if not found
     if (defaultBranch === 'main') {
@@ -306,8 +303,6 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
         }
       }
     }
-
-    console.debug(`[repo2txt] parseRepoPage: found ${files.length} files, defaultBranch=${defaultBranch}, currentBranch=${currentBranch ?? 'none'}`);
 
     return { files, defaultBranch, currentBranch };
   }
@@ -327,124 +322,124 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
    * Recursively fetches directories with concurrency control
    */
   /**
- * Fetch file tree using session mode (github.com web endpoints)
- * Recursively fetches directories with concurrency control
- */
-private async fetchTreeSession(
-  owner: string,
-  repo: string,
-  branch: string,
-  basePath: string,
-  signal?: AbortSignal
-): Promise<FileNode[]> {
-  const allNodes: FileNode[] = [];
-  const queue: Array<{ path: string; depth: number }> = [{ path: basePath, depth: 0 }];
-  const MAX_CONCURRENT = 3;
+   * Fetch file tree using session mode (github.com web endpoints)
+   * Recursively fetches directories with concurrency control
+   */
+  private async fetchTreeSession(
+    owner: string,
+    repo: string,
+    branch: string,
+    basePath: string,
+    signal?: AbortSignal
+  ): Promise<FileNode[]> {
+    const allNodes: FileNode[] = [];
+    const queue: Array<{ path: string; depth: number }> = [{ path: basePath, depth: 0 }];
+    const MAX_CONCURRENT = 3;
 
-  const processQueueItem = async (item: { path: string; depth: number }): Promise<FileNode[]> => {
-    // Check if aborted before processing
-    if (signal?.aborted) {
-      throw new Error('AbortError');
-    }
-
-    const pathSegment = item.path ? `/${item.path}` : '';
-    const url = `${GitHubProvider.WEB_BASE}/${owner}/${repo}/tree/${branch}${pathSegment}`;
-
-    const html = await this.sessionFetch(url, signal);
-    const files = this.parseDirectoryPage(html);
-
-    if (files.length === 0) {
-      throw new ProviderError(
-        'Could not parse GitHub page',
-        ErrorCode.PROVIDER_ERROR,
-        "Could not parse GitHub page. This may happen if you're not logged into GitHub, or GitHub's page structure has changed. Please try using a Personal Access Token, or check for extension updates."
-      );
-    }
-
-    const nodes: FileNode[] = [];
-    const subdirs: Array<{ path: string; depth: number }> = [];
-
-    for (const file of files) {
-      // Check if aborted between files
+    const processQueueItem = async (item: { path: string; depth: number }): Promise<FileNode[]> => {
+      // Check if aborted before processing
       if (signal?.aborted) {
         throw new Error('AbortError');
       }
 
-      const fullPath = item.path ? `${item.path}/${file.name}` : file.name;
-      const isDirectory = file.type === 'directory';
+      const pathSegment = item.path ? `/${item.path}` : '';
+      const url = `${GitHubProvider.WEB_BASE}/${owner}/${repo}/tree/${branch}${pathSegment}`;
 
-      nodes.push({
-        path: fullPath,
-        type: isDirectory ? 'tree' : 'blob',
-        url: `${GitHubProvider.WEB_BASE}/${owner}/${repo}/${isDirectory ? 'tree' : 'blob'}/${branch}/${fullPath}`,
-        urlType: 'web',
-        // SHA not available from web scraping
-      });
+      const html = await this.sessionFetch(url, signal);
+      const files = this.parseDirectoryPage(html);
 
-      if (isDirectory) {
-        subdirs.push({ path: fullPath, depth: item.depth + 1 });
+      if (files.length === 0) {
+        throw new ProviderError(
+          'Could not parse GitHub page',
+          ErrorCode.PROVIDER_ERROR,
+          "Could not parse GitHub page. This may happen if you're not logged into GitHub, or GitHub's page structure has changed. Please try using a Personal Access Token, or check for extension updates."
+        );
+      }
+
+      const nodes: FileNode[] = [];
+      const subdirs: Array<{ path: string; depth: number }> = [];
+
+      for (const file of files) {
+        // Check if aborted between files
+        if (signal?.aborted) {
+          throw new Error('AbortError');
+        }
+
+        const fullPath = item.path ? `${item.path}/${file.name}` : file.name;
+        const isDirectory = file.type === 'directory';
+
+        nodes.push({
+          path: fullPath,
+          type: isDirectory ? 'tree' : 'blob',
+          url: `${GitHubProvider.WEB_BASE}/${owner}/${repo}/${isDirectory ? 'tree' : 'blob'}/${branch}/${fullPath}`,
+          urlType: 'web',
+          // SHA not available from web scraping
+        });
+
+        if (isDirectory) {
+          subdirs.push({ path: fullPath, depth: item.depth + 1 });
+        }
+      }
+
+      // Add subdirectories to queue
+      queue.push(...subdirs);
+
+      return nodes;
+    };
+
+    // Process with concurrency control
+    while (queue.length > 0) {
+      // Check if aborted between batches
+      if (signal?.aborted) {
+        throw new Error('AbortError');
+      }
+
+      const batch = queue.splice(0, MAX_CONCURRENT);
+      const results = await Promise.all(batch.map(processQueueItem));
+
+      for (const nodes of results) {
+        allNodes.push(...nodes);
+      }
+
+      // Small delay between batches to avoid rate limiting
+      if (queue.length > 0) {
+        await this.delay(100);
       }
     }
 
-    // Add subdirectories to queue
-    queue.push(...subdirs);
-
-    return nodes;
-  };
-
-  // Process with concurrency control
-  while (queue.length > 0) {
-    // Check if aborted between batches
-    if (signal?.aborted) {
-      throw new Error('AbortError');
-    }
-
-    const batch = queue.splice(0, MAX_CONCURRENT);
-    const results = await Promise.all(batch.map(processQueueItem));
-
-    for (const nodes of results) {
-      allNodes.push(...nodes);
-    }
-
-    // Small delay between batches to avoid rate limiting
-    if (queue.length > 0) {
-      await this.delay(100);
-    }
+    return allNodes;
   }
 
-  return allNodes;
-}
-
-/**
- * Fetch file content using session mode (github.com raw URLs)
- */
+  /**
+   * Fetch file content using session mode (github.com raw URLs)
+   */
   private async fetchFileSession(node: FileNode, signal?: AbortSignal): Promise<FileContent> {
-  let rawUrl: string;
+    let rawUrl: string;
 
-  if (node.urlType === 'web' && node.url?.includes('/blob/')) {
-    // Session-mode node: convert blob URL to raw URL
-    rawUrl = node.url.replace('/blob/', '/raw/');
-  } else if (this.repoInfo?.owner) {
-    // PAT-mode node falling back to session: construct web URL from repo metadata
-    const branch = this.repoInfo.branch || 'HEAD';
+    if (node.urlType === 'web' && node.url?.includes('/blob/')) {
+      // Session-mode node: convert blob URL to raw URL
+      rawUrl = node.url.replace('/blob/', '/raw/');
+    } else if (this.repoInfo?.owner) {
+      // PAT-mode node falling back to session: construct web URL from repo metadata
+      const branch = this.repoInfo.branch || 'HEAD';
       rawUrl = `${GitHubProvider.WEB_BASE}/${this.repoInfo.owner}/${this.repoInfo.name}/raw/${branch}/${node.path}`;
-  } else {
-    throw new ProviderError(
-      'Cannot construct session URL for file',
-      ErrorCode.INVALID_URL,
-      'Cannot fetch file: missing URL or repo metadata'
-    );
+    } else {
+      throw new ProviderError(
+        'Cannot construct session URL for file',
+        ErrorCode.INVALID_URL,
+        'Cannot fetch file: missing URL or repo metadata'
+      );
+    }
+
+    const text = await this.sessionFetch(rawUrl, signal);
+
+    return {
+      path: node.path,
+      text,
+      url: rawUrl,
+      lineCount: text.split('\n').length,
+    };
   }
-
-  const text = await this.sessionFetch(rawUrl, signal);
-
-  return {
-    path: node.path,
-    text,
-    url: rawUrl,
-    lineCount: text.split('\n').length,
-  };
-}
 
   /**
    * Resolve branch and path for session mode by fetching the repo page
@@ -551,84 +546,47 @@ private async fetchTreeSession(
   }
 
   async fetchTree(url: string, options?: FetchOptions): Promise<FileNode[]> {
-  const parsed = this.parseUrl(url);
+    const parsed = this.parseUrl(url);
 
-  if (!parsed.isValid) {
-    throw new ProviderError(
-      parsed.error || 'Invalid URL',
-      ErrorCode.INVALID_URL,
-      parsed.error || 'Please provide a valid GitHub repository URL'
-    );
-  }
-
-  const { owner, repo } = parsed;
-  if (!owner || !repo) {
-    throw new ProviderError(
-      'Missing owner or repo',
-      ErrorCode.INVALID_URL,
-      'Could not extract repository information from URL'
-    );
-  }
-
-  // Store repo metadata
-  this.repoInfo = {
-    type: 'github',
-    name: repo,
-    owner,
-    branch: options?.branch || parsed.branch,
-    path: options?.path || parsed.path,
-    url,
-  };
-
-  const cacheKey = `${url}${options?.branch ? `#${options.branch}` : ''}`;
-  const { getCachedRepo, setCachedRepo } = useStore.getState();
-  const cached = getCachedRepo(cacheKey);
-
-  if (cached) {
-    return cached.data;
-  }
-
-  try {
-    // Session mode: use github.com web endpoints
-    if (this.sessionMode) {
-    const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
-      const branch = options?.branch || resolved.branch;
-      const path = options?.path || resolved.path;
-
-      this.repoInfo.branch = branch;
-      this.repoInfo.path = path;
-
-      const tree = await this.fetchTreeSession(owner, repo, branch, path, options?.signal);
-      setCachedRepo(cacheKey, tree, []);
-      return tree;
+    if (!parsed.isValid) {
+      throw new ProviderError(
+        parsed.error || 'Invalid URL',
+        ErrorCode.INVALID_URL,
+        parsed.error || 'Please provide a valid GitHub repository URL'
+      );
     }
 
-    // PAT mode: use api.github.com endpoints
-    let ref = options?.branch || parsed.branch || '';
-    let path = options?.path || parsed.path || '';
+    const { owner, repo } = parsed;
+    if (!owner || !repo) {
+      throw new ProviderError(
+        'Missing owner or repo',
+        ErrorCode.INVALID_URL,
+        'Could not extract repository information from URL'
+      );
+    }
 
-    if (parsed.branch) {
-      const references = await this.fetchReferences(owner, repo, options?.signal);
-      const resolved = this.resolveRefAndPath(parsed.branch, references);
-      ref = resolved.ref;
-      path = resolved.path;
+    // Store repo metadata
+    this.repoInfo = {
+      type: 'github',
+      name: repo,
+      owner,
+      branch: options?.branch || parsed.branch,
+      path: options?.path || parsed.path,
+      url,
+    };
+
+    const cacheKey = `${url}${options?.branch ? `#${options.branch}` : ''}`;
+    const { getCachedRepo, setCachedRepo } = useStore.getState();
+    const cached = getCachedRepo(cacheKey);
+
+    if (cached) {
+      return cached.data;
     }
 
     try {
-      const sha = await this.fetchTreeSha(owner, repo, ref, path, options?.signal);
-      const tree = await this.fetchTreeRecursive(owner, repo, sha, options?.signal);
-      setCachedRepo(cacheKey, tree, []);
-      return tree;
-    } catch (error) {
-      // Re-throw AbortError without fallback
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw error;
-      }
-          // API got 404: fall back to session mode (repo may be private or require browser auth)
-          // Note: 403 is rate limiting, don't fall back for that
-          if (this.is404Error(error)) {
-        this.sessionMode = true;
-    const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
+      // Session mode: use github.com web endpoints
+      if (this.sessionMode) {
+        const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
         const branch = options?.branch || resolved.branch;
         const path = options?.path || resolved.path;
 
@@ -639,21 +597,62 @@ private async fetchTreeSession(
         setCachedRepo(cacheKey, tree, []);
         return tree;
       }
-      throw error;
+
+      // PAT mode: use api.github.com endpoints
+      let ref = options?.branch || parsed.branch || '';
+      let path = options?.path || parsed.path || '';
+
+      if (parsed.branch) {
+        const references = await this.fetchReferences(owner, repo, options?.signal);
+        const resolved = this.resolveRefAndPath(parsed.branch, references);
+        ref = resolved.ref;
+        path = resolved.path;
+      }
+
+      try {
+        const sha = await this.fetchTreeSha(owner, repo, ref, path, options?.signal);
+        const tree = await this.fetchTreeRecursive(owner, repo, sha, options?.signal);
+        setCachedRepo(cacheKey, tree, []);
+        return tree;
+      } catch (error) {
+        // Re-throw AbortError without fallback
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw error;
+        }
+        // API got 404: fall back to session mode (repo may be private or require browser auth)
+        // Note: 403 is rate limiting, don't fall back for that
+        if (this.is404Error(error)) {
+          this.sessionMode = true;
+          const resolved = await this.resolveSessionRefAndPath(owner, repo, parsed.branch);
+          const branch = options?.branch || resolved.branch;
+          const path = options?.path || resolved.path;
+
+          this.repoInfo.branch = branch;
+          this.repoInfo.path = path;
+
+          const tree = await this.fetchTreeSession(owner, repo, branch, path, options?.signal);
+          setCachedRepo(cacheKey, tree, []);
+          return tree;
+        }
+        throw error;
+      }
+    } catch (error) {
+      // Re-throw AbortError without wrapping
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      throw this.handleFetchError(error, `${owner}/${repo}`);
     }
-  } catch (error) {
-    // Re-throw AbortError without wrapping
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw error;
-    }
-    throw this.handleFetchError(error, `${owner}/${repo}`);
   }
-}
 
   /**
    * Fetch references (branches and tags)
    */
-  private async fetchReferences(owner: string, repo: string, signal?: AbortSignal): Promise<GitHubReferences> {
+  private async fetchReferences(
+    owner: string,
+    repo: string,
+    signal?: AbortSignal
+  ): Promise<GitHubReferences> {
     const headers = this.buildGitHubHeaders();
 
     const [branchesResponse, tagsResponse] = await Promise.all([
@@ -679,7 +678,6 @@ private async fetchTreeSession(
       tags: tagsData.map((t: { ref: string }) => t.ref.split('/').slice(2).join('/')),
     };
   }
-
 
   /**
    * Resolve ref and path from URL segment
@@ -745,55 +743,59 @@ private async fetchTreeSession(
     return data.sha;
   }
 
-
   /**
    * Fetch complete file tree recursively
    */
   /**
- * Fetch complete file tree recursively
- */
-private async fetchTreeRecursive(owner: string, repo: string, sha: string, signal?: AbortSignal): Promise<FileNode[]> {
-  const headers = this.buildGitHubHeaders({
-    Accept: 'application/vnd.github+json',
-  });
+   * Fetch complete file tree recursively
+   */
+  private async fetchTreeRecursive(
+    owner: string,
+    repo: string,
+    sha: string,
+    signal?: AbortSignal
+  ): Promise<FileNode[]> {
+    const headers = this.buildGitHubHeaders({
+      Accept: 'application/vnd.github+json',
+    });
 
-  const url = `${GitHubProvider.API_BASE}/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`;
-  const response = await this.fetchWithRetry(url, { headers }, 1, signal);
-  const data = await response.json();
+    const url = `${GitHubProvider.API_BASE}/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`;
+    const response = await this.fetchWithRetry(url, { headers }, 1, signal);
+    const data = await response.json();
 
-  if (data.truncated) {
-    return this.fetchTreeManualRecursive(owner, repo, sha, '', signal);
+    if (data.truncated) {
+      return this.fetchTreeManualRecursive(owner, repo, sha, '', signal);
+    }
+
+    return data.tree.map(
+      (item: { path: string; type: string; url: string; size?: number; sha?: string }) => ({
+        path: item.path,
+        type: item.type === 'blob' ? 'blob' : 'tree',
+        url: item.url,
+        urlType: 'api' as const,
+        size: item.size,
+        sha: item.sha,
+      })
+    );
   }
 
-  return data.tree.map(
-    (item: { path: string; type: string; url: string; size?: number; sha?: string }) => ({
-      path: item.path,
-      type: item.type === 'blob' ? 'blob' : 'tree',
-      url: item.url,
-      urlType: 'api' as const,
-      size: item.size,
-      sha: item.sha,
-    })
-  );
-}
+  private async fetchTreeManualRecursive(
+    owner: string,
+    repo: string,
+    sha: string,
+    basePath: string,
+    signal?: AbortSignal
+  ): Promise<FileNode[]> {
+    const headers = this.buildGitHubHeaders({
+      Accept: 'application/vnd.github+json',
+    });
 
-private async fetchTreeManualRecursive(
-  owner: string,
-  repo: string,
-  sha: string,
-  basePath: string,
-  signal?: AbortSignal
-): Promise<FileNode[]> {
-  const headers = this.buildGitHubHeaders({
-    Accept: 'application/vnd.github+json',
-  });
+    const url = `${GitHubProvider.API_BASE}/repos/${owner}/${repo}/git/trees/${sha}`;
+    const response = await this.fetchWithRetry(url, { headers }, 1, signal);
+    const data = await response.json();
 
-  const url = `${GitHubProvider.API_BASE}/repos/${owner}/${repo}/git/trees/${sha}`;
-  const response = await this.fetchWithRetry(url, { headers }, 1, signal);
-  const data = await response.json();
-
-  const allNodes: FileNode[] = [];
-  const treeTasks: (() => Promise<FileNode[]>)[] = [];
+    const allNodes: FileNode[] = [];
+    const treeTasks: (() => Promise<FileNode[]>)[] = [];
 
     for (const item of data.tree) {
       // Check if aborted between items
@@ -803,99 +805,98 @@ private async fetchTreeManualRecursive(
         throw error;
       }
 
+      const fullPath = basePath ? `${basePath}/${item.path}` : item.path;
 
-    const fullPath = basePath ? `${basePath}/${item.path}` : item.path;
+      allNodes.push({
+        path: fullPath,
+        type: item.type === 'blob' ? 'blob' : 'tree',
+        url: item.url,
+        urlType: 'api' as const,
+        size: item.size,
+        sha: item.sha,
+      });
 
-    allNodes.push({
-      path: fullPath,
-      type: item.type === 'blob' ? 'blob' : 'tree',
-      url: item.url,
-      urlType: 'api' as const,
-      size: item.size,
-      sha: item.sha,
-    });
-
-    if (item.type === 'tree' && item.sha) {
-      treeTasks.push(() =>
-        this.fetchTreeManualRecursive(owner, repo, item.sha as string, fullPath, signal)
-      );
+      if (item.type === 'tree' && item.sha) {
+        treeTasks.push(() =>
+          this.fetchTreeManualRecursive(owner, repo, item.sha as string, fullPath, signal)
+        );
+      }
     }
-  }
 
-  const chunkSize = 5;
-  for (let i = 0; i < treeTasks.length; i += chunkSize) {
-    // Check if aborted between chunks
+    const chunkSize = 5;
+    for (let i = 0; i < treeTasks.length; i += chunkSize) {
+      // Check if aborted between chunks
       if (signal?.aborted) {
         const error = new Error('Request aborted');
-    error.name = 'AbortError';
-      throw error;
-}
-
-    const chunk = treeTasks.slice(i, i + chunkSize);
-    const results = await Promise.all(chunk.map((task) => task()));
-    for (const subNodes of results) {
-      allNodes.push(...subNodes);
-    }
-  }
-
-  return allNodes;
-}
-
-/**
- * Fetch a single file's content (override to handle GitHub's base64 encoding)
- */
-  async fetchFile(node: FileNode, signal?: AbortSignal): Promise<FileContent> {
-  if (!node.url) {
-    throw new ProviderError(
-      'File node has no URL',
-      ErrorCode.INVALID_URL,
-      'Cannot fetch file: missing URL'
-    );
-  }
-
-  try {
-    // Session mode: use raw github.com URLs
-    if (this.sessionMode) {
-      return this.fetchFileSession(node, signal);
-    }
-
-    // PAT mode: use api.github.com endpoints
-    const headers = this.buildGitHubHeaders();
-    const response = await this.fetchWithRetry(node.url, { headers }, 1, signal);
-    const data = await response.json();
-
-    // GitHub returns base64-encoded content
-    let text = data.content || '';
-    if (data.encoding === 'base64') {
-      // Remove whitespace/newlines from base64 string
-      text = text.replace(/\s/g, '');
-      // Decode base64 to binary string, then convert to UTF-8
-      const binaryString = atob(text);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+        error.name = 'AbortError';
+        throw error;
       }
-      text = new TextDecoder('utf-8').decode(bytes);
+
+      const chunk = treeTasks.slice(i, i + chunkSize);
+      const results = await Promise.all(chunk.map((task) => task()));
+      for (const subNodes of results) {
+        allNodes.push(...subNodes);
+      }
     }
 
-    return {
-      path: node.path,
-      text,
-      url: node.url,
-      lineCount: text.split('\n').length,
-    };
-  } catch (error) {
+    return allNodes;
+  }
+
+  /**
+   * Fetch a single file's content (override to handle GitHub's base64 encoding)
+   */
+  async fetchFile(node: FileNode, signal?: AbortSignal): Promise<FileContent> {
+    if (!node.url) {
+      throw new ProviderError(
+        'File node has no URL',
+        ErrorCode.INVALID_URL,
+        'Cannot fetch file: missing URL'
+      );
+    }
+
+    try {
+      // Session mode: use raw github.com URLs
+      if (this.sessionMode) {
+        return this.fetchFileSession(node, signal);
+      }
+
+      // PAT mode: use api.github.com endpoints
+      const headers = this.buildGitHubHeaders();
+      const response = await this.fetchWithRetry(node.url, { headers }, 1, signal);
+      const data = await response.json();
+
+      // GitHub returns base64-encoded content
+      let text = data.content || '';
+      if (data.encoding === 'base64') {
+        // Remove whitespace/newlines from base64 string
+        text = text.replace(/\s/g, '');
+        // Decode base64 to binary string, then convert to UTF-8
+        const binaryString = atob(text);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        text = new TextDecoder('utf-8').decode(bytes);
+      }
+
+      return {
+        path: node.path,
+        text,
+        url: node.url,
+        lineCount: text.split('\n').length,
+      };
+    } catch (error) {
       // Re-throw AbortError without fallback
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
-    if (this.is404Error(error)) {
-      this.sessionMode = true;
-      return this.fetchFileSession(node, signal);
+      if (this.is404Error(error)) {
+        this.sessionMode = true;
+        return this.fetchFileSession(node, signal);
+      }
+      throw this.handleFetchError(error, node.path);
     }
-throw this.handleFetchError(error, node.path);
-}
-}
+  }
 
   /**
    * Build GitHub-specific headers with authentication

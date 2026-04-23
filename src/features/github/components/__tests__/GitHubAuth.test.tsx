@@ -17,16 +17,16 @@ describe('GitHubAuth', () => {
   const mockSetPAT = vi.fn();
   const mockClearPAT = vi.fn();
 
- beforeEach(() => {
- vi.clearAllMocks();
- (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: null });
- (useStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
- credentials: null,
- setCredentials: mockSetCredentials,
- setPAT: mockSetPAT,
- clearPAT: mockClearPAT,
- });
- });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: null });
+    (useStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      credentials: null,
+      setCredentials: mockSetCredentials,
+      setPAT: mockSetPAT,
+      clearPAT: mockClearPAT,
+    });
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -104,16 +104,16 @@ describe('GitHubAuth', () => {
     });
   });
 
- it('should load saved token from store on mount', () => {
- const savedToken = 'ghp_savedtoken456';
- (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: savedToken });
+  it('should load saved token from store on mount', () => {
+    const savedToken = 'ghp_savedtoken456';
+    (useStore.getState as ReturnType<typeof vi.fn>).mockReturnValue({ pat: savedToken });
 
- render(<GitHubAuth />);
+    render(<GitHubAuth />);
 
- const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
- expect(input.value).toBe(savedToken);
- expect(mockSetCredentials).toHaveBeenCalledWith({ token: savedToken });
- });
+    const input = screen.getByPlaceholderText('ghp_...') as HTMLInputElement;
+    expect(input.value).toBe(savedToken);
+    expect(mockSetCredentials).toHaveBeenCalledWith({ token: savedToken });
+  });
 
   it('should show clear button when token is entered', async () => {
     render(<GitHubAuth />);

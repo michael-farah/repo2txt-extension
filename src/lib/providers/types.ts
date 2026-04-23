@@ -51,7 +51,10 @@ export interface IProvider {
    * @param nodes - Array of file nodes to fetch
    * @returns Async generator yielding file contents
    */
-  fetchMultiple(nodes: FileNode[], signal?: AbortSignal): AsyncGenerator<FileContent, void, unknown>;
+  fetchMultiple(
+    nodes: FileNode[],
+    signal?: AbortSignal
+  ): AsyncGenerator<FileContent, void, unknown>;
 
   /**
    * Get metadata about the current repository
@@ -109,12 +112,7 @@ export class ProviderError extends Error {
   userMessage: string;
   recovery?: () => void;
 
-  constructor(
-    message: string,
-    code: string,
-    userMessage: string,
-    recovery?: () => void
-  ) {
+  constructor(message: string, code: string, userMessage: string, recovery?: () => void) {
     super(message);
     this.name = 'ProviderError';
     this.code = code;
@@ -138,4 +136,4 @@ export const ErrorCode = {
   UNKNOWN: 'UNKNOWN',
 } as const;
 
-export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

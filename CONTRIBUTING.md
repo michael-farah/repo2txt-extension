@@ -391,7 +391,7 @@ class ErrorBoundary extends Component {
 repo2txt/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # GitHub Pages deployment
+│ └── deploy.yml # CI & Release pipeline
 │
 ├── src/
 │   ├── features/               # Feature modules (domain-driven)
@@ -795,7 +795,7 @@ bun run format:check  # Check formatting
 ### Branch Strategy
 
 - **`master`** - Production-ready code
-- **`v2-development`** - Main development branch
+- **`v1-beta`** - Main development branch
 - **`feature/*`** - New features (e.g., `feature/gitlab-support`)
 - **`fix/*`** - Bug fixes (e.g., `fix/token-storage`)
 - **`refactor/*`** - Code refactoring (e.g., `refactor/provider-interface`)

@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { RateLimiter } from '../rateLimiter';
 
 describe('RateLimiter', () => {
-
   describe('constructor', () => {
     it('should create with default options', () => {
       const limiter = new RateLimiter();

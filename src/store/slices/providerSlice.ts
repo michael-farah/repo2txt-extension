@@ -42,7 +42,7 @@ export const createProviderSlice: StateCreator<ProviderSlice> = (set) => ({
   },
 
   setPAT: (pat: string | null) => set({ pat }),
-  
+
   clearPAT: () => set({ pat: null }),
 
   setRepoMetadata: (metadata: RepoMetadata) => set({ repoMetadata: metadata }),

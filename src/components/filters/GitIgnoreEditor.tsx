@@ -45,9 +45,9 @@ export function GitIgnoreEditor({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPatterns(initialPatterns.join('\n'));
-     
+
     setLocalShowExcluded(showExcluded);
-     
+
     setHasChanges(false);
   }, [initialPatterns, showExcluded]);
 
@@ -111,9 +111,16 @@ export function GitIgnoreEditor({
         />
 
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          <p>• Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">#</code> for comments</p>
-          <p>• Add <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">/</code> at the end for directories</p>
-          <p>• Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">*</code> for wildcards</p>
+          <p>
+            • Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">#</code> for comments
+          </p>
+          <p>
+            • Add <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">/</code> at the end
+            for directories
+          </p>
+          <p>
+            • Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">*</code> for wildcards
+          </p>
         </div>
       </div>
 
@@ -146,12 +153,7 @@ export function GitIgnoreEditor({
         >
           Apply Patterns
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleReset}
-          className="flex-1"
-        >
+        <Button variant="secondary" size="sm" onClick={handleReset} className="flex-1">
           Reset
         </Button>
       </div>

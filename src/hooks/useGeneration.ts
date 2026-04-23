@@ -72,7 +72,10 @@ export function useGeneration(opts: UseGenerationOpts) {
 
       // Fetch file contents with abort support
       const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
+      for await (const content of currentProvider.fetchMultiple(
+        selectedNodes,
+        abortController.signal
+      )) {
         fileContents.push(content);
       }
 
@@ -105,9 +108,8 @@ export function useGeneration(opts: UseGenerationOpts) {
       const formattedOutput = await Formatter.formatAsync(
         fullTree,
         fileContents,
-        (progress, current, total) => {
+        (_progress, _current, _total) => {
           // Progress callback - could show progress UI here
-          console.log(`Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
         }
       );
 
@@ -132,7 +134,8 @@ export function useGeneration(opts: UseGenerationOpts) {
         });
       } else {
         onError({
-          message: err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
+          message:
+            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
         });
       }
     } finally {

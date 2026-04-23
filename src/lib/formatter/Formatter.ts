@@ -43,10 +43,7 @@ export class Formatter {
       content: file.text,
     }));
 
-    const { totalTokens, files } = await worker.tokenizeBatch(
-      filesToTokenize,
-      onProgress
-    );
+    const { totalTokens, files } = await worker.tokenizeBatch(filesToTokenize, onProgress);
 
     // Update file contents with token counts
     const updatedContents = fileContents.map((file, index) => ({
