@@ -19,6 +19,9 @@
     --border: 229 231 235;
     --border-subtle: 243 244 246;
 
+    /* Effects */
+    --primary-glow: 99 102 241;
+
     /* Layout */
     --popup-width: 600px;
     --popup-min-height: 500px;
@@ -44,6 +47,8 @@
 
     --border: 51 65 85;
     --border-subtle: 30 41 59;
+
+    --primary-glow: 129 140 248;
 
     /* Legacy compat */
     --color-bg-primary: 17 24 39;
@@ -88,12 +93,7 @@
 
   /* Shimmer loading background */
   .shimmer-bg {
-    background: linear-gradient(
-      90deg,
-      rgb(var(--surface-raised) / 1) 25%,
-      rgb(var(--surface) / 1) 50%,
-      rgb(var(--surface-raised) / 1) 75%
-    );
+    background: linear-gradient(90deg, transparent 0%, rgb(var(--surface-raised) / 0.5) 50%, transparent 100%);
     background-size: 200% 100%;
   }
 
