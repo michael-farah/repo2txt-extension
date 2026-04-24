@@ -4,23 +4,54 @@
 
 @layer base {
   :root {
+    /* Surface */
+    --surface: 255 255 255;
+    --surface-raised: 249 250 251;
+    --surface-overlay: 255 255 255;
+    --surface-sunken: 243 244 246;
+
+    /* Content */
+    --content: 17 24 39;
+    --content-muted: 107 114 128;
+    --content-subtle: 156 163 175;
+
+    /* Borders */
+    --border: 229 231 235;
+    --border-subtle: 243 244 246;
+
+    /* Layout */
+    --popup-width: 600px;
+    --popup-min-height: 500px;
+
+    /* Legacy compat */
     --color-bg-primary: 255 255 255;
     --color-bg-secondary: 249 250 251;
     --color-text-primary: 17 24 39;
     --color-text-secondary: 107 114 128;
     --color-border: 229 231 235;
-    --color-accent: 59 130 246;
-    --popup-width: 600px;
-    --popup-min-height: 500px;
+    --color-accent: 99 102 241;
   }
 
   .dark {
+    --surface: 17 24 39;
+    --surface-raised: 30 41 59;
+    --surface-overlay: 30 41 55;
+    --surface-sunken: 15 23 42;
+
+    --content: 243 244 246;
+    --content-muted: 156 163 175;
+    --content-subtle: 107 114 128;
+
+    --border: 51 65 85;
+    --border-subtle: 30 41 59;
+
+    /* Legacy compat */
     --color-bg-primary: 17 24 39;
     --color-bg-secondary: 31 41 55;
     --color-text-primary: 243 244 246;
     --color-text-secondary: 156 163 175;
     --color-border: 55 65 81;
-    --color-accent: 96 165 250;
+    --color-accent: 129 140 248;
   }
 
   body {
@@ -28,6 +59,8 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     width: var(--popup-width);
     min-height: var(--popup-min-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -51,6 +84,17 @@
   }
   .press-scale:active {
     transform: scale(0.97);
+  }
+
+  /* Shimmer loading background */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--surface-raised) / 1) 25%,
+      rgb(var(--surface) / 1) 50%,
+      rgb(var(--surface-raised) / 1) 75%
+    );
+    background-size: 200% 100%;
   }
 }
 
@@ -86,4 +130,3 @@
     opacity: 1;
   }
 }
-
