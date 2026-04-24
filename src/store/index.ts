@@ -56,28 +56,29 @@ export const useStore = create<AppStore>()(
           reviver: jsonReviver,
           replacer: jsonReplacer,
         }),
-      partialize: (state) => ({
-        pat: state.pat,
-        repoCache: state.repoCache,
-        providerType: state.providerType,
-        repoUrl: state.repoUrl,
-        repoMetadata: state.repoMetadata,
-        nodes: state.nodes,
-        selectedPaths: state.selectedPaths,
-        expandedPaths: state.expandedPaths,
-        excludedPaths: state.excludedPaths,
-        extensions: state.extensions,
-        gitignorePatterns: state.gitignorePatterns,
-        showExcludedFiles: state.showExcludedFiles,
-        outputText: state.outputText,
-        tokenCount: state.tokenCount,
-        lineCount: state.lineCount,
-        activeTab: state.activeTab,
-        showGitHubButton: state.showGitHubButton,
-        showTokenCount: state.showTokenCount,
-        showLineCount: state.showLineCount,
-        autoExpandDirectories: state.autoExpandDirectories,
-      }),
+        partialize: (state) => ({
+          pat: state.pat,
+          repoCache: state.repoCache,
+          recentRepos: state.recentRepos,
+          providerType: state.providerType,
+          repoUrl: state.repoUrl,
+          repoMetadata: state.repoMetadata,
+          nodes: state.nodes,
+          selectedPaths: state.selectedPaths,
+          expandedPaths: state.expandedPaths,
+          excludedPaths: state.excludedPaths,
+          extensions: state.extensions,
+          gitignorePatterns: state.gitignorePatterns,
+          showExcludedFiles: state.showExcludedFiles,
+          outputText: state.outputText,
+          tokenCount: state.tokenCount,
+          lineCount: state.lineCount,
+          activeTab: state.activeTab,
+          showGitHubButton: state.showGitHubButton,
+          showTokenCount: state.showTokenCount,
+          showLineCount: state.showLineCount,
+          autoExpandDirectories: state.autoExpandDirectories,
+        }),
         onRehydrateStorage: () => (state) => {
           const fixes = reviveSetMap(state);
           if (fixes && state) {
@@ -97,5 +98,5 @@ export { type ThemeSlice } from './slices/themeSlice';
 export { type ProviderSlice } from './slices/providerSlice';
 export { type FileTreeSlice } from './slices/fileTreeSlice';
 export { type UISlice, type ActiveTab } from './slices/uiSlice';
-export { type CacheSlice } from './slices/cacheSlice';
+export { type CacheSlice, type CachedRepoData, type RepoSnapshot, type RecentRepo } from './slices/cacheSlice';
 export { type SettingsSlice } from './slices/settingsSlice';

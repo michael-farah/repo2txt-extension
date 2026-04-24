@@ -14,19 +14,36 @@ interface FileTreeProps {
   onSelect?: (path: string, selected: boolean) => void;
   showExcluded?: boolean;
   maxHeight?: number;
+  searchQuery?: string;
 }
 
 /**
  * Flatten tree structure for virtual scrolling
+ * Filters nodes based on search query if provided
  */
 function flattenTree(
   nodes: TreeNode[],
-  showExcluded: boolean
+  showExcluded: boolean,
+  searchQuery?: string
 ): Array<{
   node: TreeNode;
   depth: number;
 }> {
   const result: Array<{ node: TreeNode; depth: number }> = [];
+  const query = searchQuery?.trim().toLowerCase();
+
+  // Check if a node matches the search query
+  function nodeMatches(node: TreeNode): boolean {
+    if (!query) return true;
+    return node.name.toLowerCase().includes(query);
+  }
+
+  // Check if a node has any descendants that match
+  function hasMatchingDescendants(node: TreeNode): boolean {
+    if (!query) return true;
+    if (node.type !== 'directory' || !node.children) return false;
+    return node.children.some(child => nodeMatches(child) || hasMatchingDescendants(child));
+  }
 
   function traverse(nodes: TreeNode[], depth: number) {
     for (const node of nodes) {
@@ -34,9 +51,20 @@ function flattenTree(
         continue;
       }
 
+      // If there's a search query, filter nodes
+      if (query) {
+        const matches = nodeMatches(node);
+        const hasMatchingChildren = hasMatchingDescendants(node);
+        // Include if node matches OR if it's a directory with matching descendants
+        if (!matches && !hasMatchingChildren) {
+          continue;
+        }
+      }
+
       result.push({ node, depth });
 
       // Include children if directory is expanded (has children array)
+      // When searching, always show children of matching directories
       if (node.type === 'directory' && node.children) {
         traverse(node.children, depth + 1);
       }
@@ -53,14 +81,15 @@ export function FileTree({
   onSelect,
   showExcluded = false,
   maxHeight = 600,
+  searchQuery,
 }: FileTreeProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Flatten tree for virtual scrolling
-  const flatNodes = useMemo(() => flattenTree(nodes, showExcluded), [nodes, showExcluded]);
+  const flatNodes = useMemo(() => flattenTree(nodes, showExcluded, searchQuery), [nodes, showExcluded, searchQuery]);
 
   // Virtual scrolling
-      // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual's useVirtualizer returns functions that cannot be memoized; this is expected and safe
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual's useVirtualizer returns functions that cannot be memoized; this is expected and safe
   const virtualizer = useVirtualizer({
     count: flatNodes.length,
     getScrollElement: () => parentRef.current,
