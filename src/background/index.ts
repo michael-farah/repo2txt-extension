@@ -11,7 +11,14 @@ interface ProcessingState {
 
 // Track pending requests for cancellation
 const pendingRequests = new Map<string, AbortController>();
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Security: only process messages from our own extension
+  if (sender.id !== chrome.runtime.id) {
+    console.warn('repo2txt: rejected message from unknown sender:', sender.id);
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
+
   // Handle OPEN_POPUP_WITH_REPO - store processing state and set badge
   if (message.type === 'OPEN_POPUP_WITH_REPO' && message.repoUrl) {
     const processingState: ProcessingState = {
