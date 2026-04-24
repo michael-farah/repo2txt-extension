@@ -15,9 +15,9 @@
     --content-muted: 107 114 128;
     --content-subtle: 156 163 175;
 
-    /* Borders */
-    --border: 229 231 235;
-    --border-subtle: 243 244 246;
+    /* Stroke (border colors) — named stroke to avoid Tailwind conflict */
+    --stroke: 229 231 235;
+    --stroke-subtle: 243 244 246;
 
     /* Effects */
     --primary-glow: 99 102 241;
@@ -45,8 +45,8 @@
     --content-muted: 156 163 175;
     --content-subtle: 107 114 128;
 
-    --border: 51 65 85;
-    --border-subtle: 30 41 59;
+    --stroke: 51 65 85;
+    --stroke-subtle: 30 41 59;
 
     --primary-glow: 129 140 248;
 
@@ -59,14 +59,16 @@
     --color-accent: 129 140 248;
   }
 
- body {
- @apply bg-surface text-content;
- font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
- width: var(--popup-width);
- min-height: var(--popup-min-height);
- -webkit-font-smoothing: antialiased;
- -moz-osx-font-smoothing: grayscale;
- transition: background-color 200ms ease-out, color 200ms ease-out;
+  body {
+    background-color: rgba(var(--surface), 1);
+    color: rgba(var(--content), 1);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    width: var(--popup-width);
+    min-height: var(--popup-min-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 200ms ease-out, color 200ms ease-out;
+  }
 }
 
 @layer utilities {
@@ -93,19 +95,29 @@
 
   /* Shimmer loading background */
   .shimmer-bg {
-    background: linear-gradient(90deg, transparent 0%, rgb(var(--surface-raised) / 0.5) 50%, transparent 100%);
+    background: linear-gradient(
+      90deg,
+      var(--shimmer-from, #f9fafb) 25%,
+      var(--shimmer-to, #ffffff) 50%,
+      var(--shimmer-from, #f9fafb) 75%
+    );
     background-size: 200% 100%;
   }
 
- /* Indeterminate progress bar */
- .animate-indeterminate {
- animation: indeterminate 1.5s ease-in-out infinite;
- }
+  .dark .shimmer-bg {
+    --shimmer-from: #1e293b;
+    --shimmer-to: #0f172a;
+  }
 
- /* Copy success flash */
- .animate-copy-success {
- animation: copySuccess 600ms ease-out forwards;
- }
+  /* Indeterminate progress bar */
+  .animate-indeterminate {
+    animation: indeterminate 1.5s ease-in-out infinite;
+  }
+
+  /* Copy success flash */
+  .animate-copy-success {
+    animation: copySuccess 600ms ease-out forwards;
+  }
 }
 
 @keyframes collapse {
@@ -142,28 +154,28 @@
 }
 
 @keyframes indeterminate {
- 0% {
- width: 0%;
- margin-left: 0%;
- }
- 50% {
- width: 60%;
- margin-left: 20%;
- }
- 100% {
- width: 0%;
- margin-left: 100%;
- }
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
 }
 
 @keyframes copySuccess {
- 0% {
- background-color: rgb(var(--surface) / 1);
- }
- 30% {
- background-color: rgb(187 247 208 / 0.5);
- }
- 100% {
- background-color: rgb(var(--surface) / 1);
- }
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+  30% {
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
 }
