@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger';
+
 interface GitHubRepoInfo {
   owner: string;
   repo: string;
@@ -236,7 +238,7 @@ function injectButton(): void {
   // Find container
   const container = findButtonContainer();
   if (!container) {
-    console.log('repo2txt: Could not find button container');
+    logger.info('repo2txt', 'Could not find button container');
     return;
   }
 
@@ -247,7 +249,7 @@ function injectButton(): void {
   button.addEventListener('click', () => {
     const repoInfo = extractRepoInfo();
     if (!repoInfo) {
-      console.error('repo2txt: Could not extract repo info');
+      logger.error('repo2txt', 'Could not extract repo info');
       return;
     }
 
@@ -283,7 +285,7 @@ function injectButton(): void {
 
   // Insert button
   container.appendChild(button);
-  console.log('repo2txt: Button injected successfully');
+  logger.info('repo2txt', 'Button injected successfully');
 }
 
 let observer: MutationObserver | null = null;

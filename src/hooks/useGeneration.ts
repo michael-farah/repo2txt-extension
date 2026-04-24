@@ -4,6 +4,7 @@ import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { ProviderError } from '@/lib/providers/types';
 import type { FileNode, FileContent, FormattedOutput } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
+import { logger } from '@/lib/utils/logger';
 
 interface ProcessingState {
   repoUrl: string;
@@ -107,7 +108,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         fileContents,
         (progress, current, total) => {
           // Progress callback - could show progress UI here
-          console.log(`Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
+      logger.info('repo2txt', `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
         }
       );
 
@@ -117,7 +118,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (err) {
-      console.error('Failed to generate output:', err);
+    logger.error('repo2txt', 'Failed to generate output:', err);
 
       // Don't show error dialog for aborted requests
       if (err instanceof Error && err.name === 'AbortError') {
