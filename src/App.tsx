@@ -199,7 +199,7 @@ function App() {
   return (
  <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-surface shadow-raised rounded-lg overflow-hidden transition-colors duration-200">
 {/* Header */}
-<header className="sticky top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-border/80">
+<header className="sticky top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-stroke/80">
 {/* Gradient accent line */}
 <div className="h-0.5 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-600" />
 <div className="flex h-12 items-center justify-between px-4">
@@ -293,7 +293,7 @@ description="Enter a GitHub URL or select local files to start converting reposi
                         }
                       }}
                       onChange={handleGlobalToggle}
- className="rounded border-border text-primary-600 focus:ring-primary-500 dark:bg-gray-800"
+ className="rounded border-stroke text-primary-600 focus:ring-primary-500 dark:bg-gray-800"
                       aria-label="Select all files"
                     />
                     <h2

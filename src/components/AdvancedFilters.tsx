@@ -37,7 +37,7 @@ export function AdvancedFilters({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="rounded-lg border border-stroke bg-surface">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -64,7 +64,7 @@ export function AdvancedFilters({
       {/* Content */}
       <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
         <div className="overflow-hidden">
-      <div className="p-2 border-t border-border-subtle">
+      <div className="p-2 border-t border-stroke-subtle">
             <div className="grid grid-cols-1 gap-3">
               {/* Extension Filter */}
               <div className="space-y-1.5">

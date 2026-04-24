@@ -104,7 +104,7 @@ export function GitHubAuth() {
           value={token}
           onChange={handleTokenChange}
           placeholder="ghp_..."
-          className="flex-1 rounded-md border border-border bg-surface-raised px-2.5 py-1.5 text-xs text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+          className="flex-1 rounded-md border border-stroke bg-surface-raised px-2.5 py-1.5 text-xs text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
         />
         {token && (
           <Button

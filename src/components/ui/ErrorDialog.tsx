@@ -70,7 +70,7 @@ export function ErrorDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div ref={dialogRef} role="dialog" aria-modal="true" className="bg-surface rounded-lg shadow-xl max-w-md w-full border border-border-subtle">
+      <div ref={dialogRef} role="dialog" aria-modal="true" className="bg-surface rounded-lg shadow-xl max-w-md w-full border border-stroke-subtle">
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div className="flex items-start gap-3">
@@ -103,7 +103,7 @@ export function ErrorDialog({
         </div>
 
         {/* Actions */}
-      <div className="flex gap-3 p-6 pt-0 border-t border-border-subtle">
+      <div className="flex gap-3 p-6 pt-0 border-t border-stroke-subtle">
           <button
             onClick={onClose}
         className="flex-1 px-4 py-2 text-sm font-medium text-content bg-surface-sunken hover:bg-surface-raised rounded-md transition-colors"

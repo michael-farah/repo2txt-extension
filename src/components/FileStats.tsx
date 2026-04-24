@@ -33,7 +33,7 @@ export function FileStats({ files }: FileStatsProps) {
   const totalLines = sortedFiles.reduce((sum, f) => sum + (f.lineCount || 0), 0);
 
   return (
-    <div className="rounded-lg border border-border bg-surface overflow-hidden">
+    <div className="rounded-lg border border-stroke bg-surface overflow-hidden">
       {/* Header with summary - Always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -77,7 +77,7 @@ export function FileStats({ files }: FileStatsProps) {
       {/* Collapsible per-file details */}
       <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
         <div className="overflow-hidden">
-      <div className="px-2 pb-2 border-t border-border-subtle">
+      <div className="px-2 pb-2 border-t border-stroke-subtle">
             <div className="space-y-0.5 max-h-48 overflow-y-auto pt-2">
               {sortedFiles.map((file) => (
                 <div

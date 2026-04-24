@@ -52,13 +52,13 @@ export function ExtensionFilter({
       </div>
 
       {/* Extension list */}
-    <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
+    <div className="max-h-64 overflow-y-auto border border-stroke rounded-lg">
         {extensions.length === 0 ? (
     <div className="p-4 text-center text-sm text-content-muted">
             No file extensions found
           </div>
         ) : (
-    <div className="divide-y divide-border-subtle">
+    <div className="divide-y divide-stroke-subtle">
             {extensions.map((ext) => (
               <label
                 key={ext.extension}

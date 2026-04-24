@@ -130,7 +130,7 @@ export function SettingsMenu() {
         role="menu"
         aria-label="Settings"
         className={cn(
- 'absolute right-0 top-full mt-1.5 w-72 rounded-lg border border-border-subtle',
+ 'absolute right-0 top-full mt-1.5 w-72 rounded-lg border border-stroke-subtle',
  'bg-surface shadow-float z-50',
           'origin-top-right transition-all duration-200 ease-out',
           isOpen
@@ -144,7 +144,7 @@ export function SettingsMenu() {
           </h3>
         </div>
 
- <div className="mx-3 border-t border-border-subtle" />
+ <div className="mx-3 border-t border-stroke-subtle" />
 
         <div className="p-2 space-y-0.5">
           <ToggleSetting

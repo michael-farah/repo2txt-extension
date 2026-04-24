@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { GitHubProvider } from '../GitHubProvider';
 
@@ -140,11 +141,12 @@ useEffect(() => {
               value={url}
               onChange={handleUrlChange}
               placeholder="https://github.com/facebook/react"
-              className={`w-full rounded-md border ${
-                error
-                  ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500'
-      : 'border-border focus:border-primary-500 focus:ring-primary-500'
-    } bg-surface-raised px-3 py-2 text-sm text-content placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 dark:focus:ring-primary-400`
+          className={cn(
+            'w-full rounded-md border bg-surface-raised px-3 py-2 text-sm text-content placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 dark:focus:ring-primary-400',
+            error
+              ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500'
+              : 'border-stroke focus:border-primary-500 focus:ring-primary-500'
+          )}
               aria-invalid={!!error}
               aria-describedby={error ? 'url-error' : undefined}
             />

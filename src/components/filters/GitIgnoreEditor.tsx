@@ -107,7 +107,7 @@ export function GitIgnoreEditor({
           value={patterns}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="# Enter gitignore patterns (one per line)&#10;node_modules/&#10;*.log&#10;.env"
-          className="w-full h-48 rounded-md border border-border bg-surface-raised px-3 py-2 text-sm font-mono text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
+          className="w-full h-48 rounded-md border border-stroke bg-surface-raised px-3 py-2 text-sm font-mono text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
         />
 
         <div className="text-xs text-content-muted">
