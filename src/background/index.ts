@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Background service worker for repo2txt extension
  * Manages processing state and badge notifications
@@ -28,7 +30,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to store processing state:', error);
+      logger.error('repo2txt', 'Failed to store processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -59,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to update processing status:', error);
+      logger.error('repo2txt', 'Failed to update processing status:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -75,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to clear processing state:', error);
+      logger.error('repo2txt', 'Failed to clear processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -93,7 +95,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to get processing state:', error);
+      logger.error('repo2txt', 'Failed to get processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -135,7 +137,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
     return true;
   }
 
-  console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url}`);
+  logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url}`);
 
   // Create AbortController for this request
   const controller = new AbortController();
@@ -146,7 +148,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
   fetch(url, { credentials: 'include', signal: controller.signal })
     .then(async (response) => {
       const html = await response.text();
-      console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
+    logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
       sendResponse({
         success: response.ok,
         status: response.status,
@@ -155,7 +157,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
     })
     .catch((error: Error) => {
       if (error.name === 'AbortError') {
-        console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → aborted`);
+      logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → aborted`);
         sendResponse({
           success: false,
           status: 0,
@@ -163,7 +165,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
           error: 'Request aborted',
         });
       } else {
-        console.error('repo2txt: Failed to fetch GitHub page:', error);
+      logger.error('repo2txt', 'Failed to fetch GitHub page:', error);
         sendResponse({
           success: false,
           status: 0,
