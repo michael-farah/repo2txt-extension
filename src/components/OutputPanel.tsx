@@ -9,6 +9,7 @@ import { Button } from './ui/Button';
 import { FileStats } from './FileStats';
 import { sanitizeFilename } from '@/lib/utils/repoName';
 import type { FormattedOutput } from '@/types';
+import { logger } from '@/lib/utils/logger';
 
 interface OutputPanelProps {
   output: FormattedOutput | null;
@@ -40,7 +41,7 @@ export function OutputPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+    logger.error('output', 'Failed to copy:', error);
     }
   };
 
@@ -115,7 +116,7 @@ export function OutputPanel({
         }
       }
     } catch (error) {
-      console.error('Failed to download:', error);
+    logger.error('output', 'Failed to download:', error);
       setDownloadError(error instanceof Error ? error.message : 'Download failed. Please try again.');
     } finally {
       setIsDownloading(false);

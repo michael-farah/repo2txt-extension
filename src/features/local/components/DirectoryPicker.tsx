@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
 import type { FileSystemDirectoryHandle } from '@/types';
+import { logger } from '@/lib/utils/logger';
 
 interface DirectoryPickerProps {
   onDirectorySelected?: (files: FileList | FileSystemDirectoryHandle) => void;
@@ -35,7 +36,7 @@ export function DirectoryPicker({ onDirectorySelected, disabled }: DirectoryPick
         inputRef.current?.click();
       }
     } catch (err) {
-      console.error('Directory selection failed:', err);
+    logger.error('directory', 'Directory selection failed:', err);
     }
   };
 
