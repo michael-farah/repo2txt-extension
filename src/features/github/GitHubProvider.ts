@@ -9,6 +9,7 @@ import { ProviderError, ErrorCode } from '@/lib/providers/types';
 import type { ParsedRepoInfo } from '@/lib/providers/types';
 import type { ProviderType, FileNode, FetchOptions, FileContent } from '@/types';
 import { useStore } from '@/store';
+import { logger } from '@/lib/utils/logger';
 
 interface GitHubReferences {
   branches: string[];
@@ -81,7 +82,7 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
 
   // Add diagnostic logging for successful responses
   if (response.success) {
-    console.debug(`[repo2txt] sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
+    logger.debug('repo2txt', `sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
   }
 
   if (!response.success) {
@@ -287,7 +288,7 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
 
  // Log when DOM fallback is used
  if (files.length === 0) {
- console.warn('[repo2txt] parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback');
+ logger.warn('repo2txt', 'parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback');
  }
  }
 
@@ -307,7 +308,7 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
       }
     }
 
-    console.debug(`[repo2txt] parseRepoPage: found ${files.length} files, defaultBranch=${defaultBranch}, currentBranch=${currentBranch ?? 'none'}`);
+    logger.debug('repo2txt', `parseRepoPage: found ${files.length} files, defaultBranch=${defaultBranch}, currentBranch=${currentBranch ?? 'none'}`);
 
     return { files, defaultBranch, currentBranch };
   }

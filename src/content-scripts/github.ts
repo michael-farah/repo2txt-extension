@@ -1,3 +1,4 @@
+import { showToast } from './toast';
 import { logger } from '@/lib/utils/logger';
 
 interface GitHubRepoInfo {
@@ -188,7 +189,133 @@ function injectStyles(): void {
       background-color: #30363d;
       border-color: rgba(240, 246, 252, 0.15);
     }
-  `;
+
+ /* Toast notification styles */
+ #repo2txt-toast-container {
+ position: fixed;
+ bottom: 20px;
+ right: 20px;
+ z-index: 9999;
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+ pointer-events: none;
+ }
+
+ .repo2txt-toast {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ padding: 12px 16px;
+ font-size: 14px;
+ font-weight: 400;
+ line-height: 20px;
+ color: #24292f;
+ background-color: #f6f8fa;
+ border: 1px solid rgba(27, 31, 36, 0.15);
+ border-radius: 6px;
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+ pointer-events: auto;
+ opacity: 0;
+ transform: translateX(20px);
+ transition: opacity 0.3s ease, transform 0.3s ease;
+ max-width: 380px;
+ word-wrap: break-word;
+ }
+
+ .repo2txt-toast-visible {
+ opacity: 1;
+ transform: translateX(0);
+ }
+
+ .repo2txt-toast-fade-out {
+ opacity: 0;
+ transform: translateX(20px);
+ }
+
+ .repo2txt-toast-success {
+ border-left: 3px solid #1a7f37;
+ }
+
+ .repo2txt-toast-error {
+ border-left: 3px solid #cf222e;
+ }
+
+ .repo2txt-toast-info {
+ border-left: 3px solid #0969da;
+ }
+
+ .repo2txt-toast-dismiss {
+ flex-shrink: 0;
+ padding: 0;
+ border: none;
+ background: none;
+ color: #57606a;
+ font-size: 16px;
+ line-height: 1;
+ cursor: pointer;
+ }
+
+ .repo2txt-toast-dismiss:hover {
+ color: #24292f;
+ }
+
+ @media (prefers-color-scheme: dark) {
+ .repo2txt-toast {
+ color: #c9d1d9;
+ background-color: #21262d;
+ border-color: rgba(240, 246, 252, 0.1);
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+ }
+
+ .repo2txt-toast-success {
+ border-left-color: #2ea043;
+ }
+
+ .repo2txt-toast-error {
+ border-left-color: #f85149;
+ }
+
+ .repo2txt-toast-info {
+ border-left-color: #58a6ff;
+ }
+
+ .repo2txt-toast-dismiss {
+ color: #8b949e;
+ }
+
+ .repo2txt-toast-dismiss:hover {
+ color: #c9d1d9;
+ }
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast {
+ color: #c9d1d9;
+ background-color: #21262d;
+ border-color: rgba(240, 246, 252, 0.1);
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast-success {
+ border-left-color: #2ea043;
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast-error {
+ border-left-color: #f85149;
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast-info {
+ border-left-color: #58a6ff;
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast-dismiss {
+ color: #8b949e;
+ }
+
+ [data-color-mode="dark"] .repo2txt-toast-dismiss:hover {
+ color: #c9d1d9;
+ }
+ `;
 
   document.head.appendChild(style);
 }
@@ -281,17 +408,13 @@ function injectButton(): void {
         .catch(() => {
           // Extension context unavailable — fall back to clipboard
           navigator.clipboard.writeText(repoUrl).then(() => {
-            alert(
-              `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
-            );
+            showToast('Repository URL copied to clipboard. Open the repo2txt extension and paste the URL.', 'success');
           });
         });
     } else {
       // Extension context not available, copy to clipboard
       navigator.clipboard.writeText(repoUrl).then(() => {
-        alert(
-          `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
-        );
+        showToast('Repository URL copied to clipboard. Open the repo2txt extension and paste the URL.', 'success');
       });
     }
   });
