@@ -263,8 +263,21 @@ function injectButton(): void {
           type: 'OPEN_POPUP_WITH_REPO',
           repoUrl: repoUrl,
         })
+        .then((response) => {
+          // Validate response structure
+          if (response && typeof response === 'object' && response.success === true) {
+            // Message handled successfully by background script
+            return;
+          }
+          // Invalid or unexpected response — fall back to clipboard
+          navigator.clipboard.writeText(repoUrl).then(() => {
+            alert(
+              `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
+            );
+          });
+        })
         .catch(() => {
-          // Fallback: copy URL to clipboard
+          // Extension context unavailable — fall back to clipboard
           navigator.clipboard.writeText(repoUrl).then(() => {
             alert(
               `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
