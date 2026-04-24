@@ -70,7 +70,7 @@ export function ErrorDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div ref={dialogRef} role="dialog" aria-modal="true" className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+      <div ref={dialogRef} role="dialog" aria-modal="true" className="bg-surface rounded-lg shadow-xl max-w-md w-full border border-border-subtle">
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div className="flex items-start gap-3">
@@ -80,14 +80,14 @@ export function ErrorDialog({
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="text-lg font-semibold text-content">
                 {title}
               </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+        className="text-content-subtle hover:text-content transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -97,16 +97,16 @@ export function ErrorDialog({
 
         {/* Message */}
         <div className="px-6 pb-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+      <p className="text-sm text-content-muted whitespace-pre-line">
             {message}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 p-6 pt-0 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex gap-3 p-6 pt-0 border-t border-border-subtle">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
+        className="flex-1 px-4 py-2 text-sm font-medium text-content bg-surface-sunken hover:bg-surface-raised rounded-md transition-colors"
           >
             Close
           </button>

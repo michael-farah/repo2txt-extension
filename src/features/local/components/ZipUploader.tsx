@@ -119,7 +119,7 @@ export function ZipUploader({ onFileSelected, disabled }: ZipUploaderProps) {
           ${
             isDragging
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
+            : 'border-border hover:border-primary-400 dark:hover:border-primary-500'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         `}
@@ -139,7 +139,7 @@ export function ZipUploader({ onFileSelected, disabled }: ZipUploaderProps) {
             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
           />
         </svg>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-2 text-sm text-content">
           {isDragging ? (
             <span className="font-medium">Drop your zip file here</span>
           ) : (
@@ -151,7 +151,7 @@ export function ZipUploader({ onFileSelected, disabled }: ZipUploaderProps) {
             </>
           )}
         </p>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-xs text-content-muted">
           Supports {SUPPORTED_FORMATS.join(', ')} (max 100MB)
         </p>
       </div>

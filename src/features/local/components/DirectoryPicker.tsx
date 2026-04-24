@@ -117,7 +117,7 @@ export function DirectoryPicker({ onDirectorySelected, disabled }: DirectoryPick
         </div>
       )}
 
-      <div className="text-xs text-gray-500 dark:text-gray-400">
+      <div className="text-xs text-content-muted">
         <p>Select a directory from your device to upload all files.</p>
         <p className="mt-1">
           <strong>Note:</strong> Large directories may take time to process.
