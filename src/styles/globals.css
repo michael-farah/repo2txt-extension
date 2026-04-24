@@ -54,14 +54,14 @@
     --color-accent: 129 140 248;
   }
 
-  body {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    width: var(--popup-width);
-    min-height: var(--popup-min-height);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
+ body {
+ @apply bg-surface text-content;
+ font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+ width: var(--popup-width);
+ min-height: var(--popup-min-height);
+ -webkit-font-smoothing: antialiased;
+ -moz-osx-font-smoothing: grayscale;
+ transition: background-color 200ms ease-out, color 200ms ease-out;
 }
 
 @layer utilities {
@@ -96,6 +96,16 @@
     );
     background-size: 200% 100%;
   }
+
+ /* Indeterminate progress bar */
+ .animate-indeterminate {
+ animation: indeterminate 1.5s ease-in-out infinite;
+ }
+
+ /* Copy success flash */
+ .animate-copy-success {
+ animation: copySuccess 600ms ease-out forwards;
+ }
 }
 
 @keyframes collapse {
@@ -129,4 +139,31 @@
   to {
     opacity: 1;
   }
+}
+
+@keyframes indeterminate {
+ 0% {
+ width: 0%;
+ margin-left: 0%;
+ }
+ 50% {
+ width: 60%;
+ margin-left: 20%;
+ }
+ 100% {
+ width: 0%;
+ margin-left: 100%;
+ }
+}
+
+@keyframes copySuccess {
+ 0% {
+ background-color: rgb(var(--surface) / 1);
+ }
+ 30% {
+ background-color: rgb(187 247 208 / 0.5);
+ }
+ 100% {
+ background-color: rgb(var(--surface) / 1);
+ }
 }

@@ -88,12 +88,13 @@ export default {
         overlay: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         float: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
       },
-      animation: {
-        'slide-in-right': 'slideInRight 200ms ease-out',
-        'slide-in-down': 'slideInDown 200ms ease-out',
-        'scale-in': 'scaleIn 150ms ease-out',
-        'shimmer': 'shimmer 2s infinite linear',
-      },
+ animation: {
+ 'slide-in-right': 'slideInRight 200ms ease-out',
+ 'slide-in-down': 'slideInDown 200ms ease-out',
+ 'scale-in': 'scaleIn 150ms ease-out',
+ 'shimmer': 'shimmer 2s infinite linear',
+ 'indeterminate': 'indeterminate 1.5s ease-in-out infinite',
+ },
       keyframes: {
         slideInRight: {
           from: { transform: 'translateX(100%)', opacity: '0' },
@@ -107,10 +108,14 @@ export default {
           from: { transform: 'scale(0.95)', opacity: '0' },
           to: { transform: 'scale(1)', opacity: '1' },
         },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
+ shimmer: {
+ '0%': { backgroundPosition: '-200% 0' },
+ '100%': { backgroundPosition: '200% 0' },
+ },
+ indeterminate: {
+ '0%': { width: '0%', marginLeft: '0%' },
+ '50%': { width: '60%', marginLeft: '20%' },
+ '100%': { width: '0%', marginLeft: '100%' },
       },
     },
   },

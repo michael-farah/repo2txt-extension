@@ -197,9 +197,9 @@ function App() {
     clearOutputRef.current = () => setOutput(null);
   });
   return (
-    <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-white dark:bg-gray-900 shadow-xl rounded-lg overflow-hidden">
+ <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-surface shadow-raised rounded-lg overflow-hidden transition-colors duration-200">
 {/* Header */}
-<header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800/80">
+<header className="sticky top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-border/80">
 {/* Gradient accent line */}
 <div className="h-0.5 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-600" />
 <div className="flex h-12 items-center justify-between px-4">
@@ -293,11 +293,11 @@ description="Enter a GitHub URL or select local files to start converting reposi
                         }
                       }}
                       onChange={handleGlobalToggle}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+ className="rounded border-border text-primary-600 focus:ring-primary-500 dark:bg-gray-800"
                       aria-label="Select all files"
                     />
                     <h2
-                      className="text-sm font-semibold text-gray-900 dark:text-gray-100"
+ className="text-sm font-semibold text-content"
                       data-testid="file-tree-heading"
                     >
                       File Tree
@@ -351,7 +351,7 @@ description="Enter a GitHub URL or select local files to start converting reposi
           {/* Output */}
  {(output || isGenerating) && (
             <section ref={outputRef}>
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+ <h2 className="text-sm font-semibold text-content mb-2">
                 Output
               </h2>
           <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} showTokenCount={showTokenCount} showLineCount={showLineCount} />
