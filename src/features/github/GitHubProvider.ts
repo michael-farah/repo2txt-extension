@@ -82,7 +82,7 @@ private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
 
   // Add diagnostic logging for successful responses
   if (response.success) {
-    console.debug(`[repo2txt] sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
+    logger.debug('repo2txt', `sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
   }
 
   if (!response.success) {

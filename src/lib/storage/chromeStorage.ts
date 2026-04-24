@@ -1,4 +1,5 @@
 import type { StateStorage } from 'zustand/middleware';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Custom JSON replacer that serializes Set and Map instances
@@ -83,7 +84,7 @@ async function encrypt(text: string): Promise<string> {
     }
     return btoa(binary);
   } catch (e) {
-    console.error('Encryption failed:', e);
+    logger.error('repo2txt', 'Encryption failed:', e);
     throw new Error('Failed to encrypt sensitive data');
   }
 }
@@ -109,7 +110,7 @@ async function decrypt(encryptedBase64: string): Promise<string> {
     const dec = new TextDecoder();
     return dec.decode(decrypted);
   } catch (e) {
-    console.error('Decryption failed:', e);
+    logger.error('repo2txt', 'Decryption failed:', e);
     throw new Error('Failed to decrypt stored data');
   }
 }

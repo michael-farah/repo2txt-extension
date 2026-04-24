@@ -8,6 +8,7 @@ import type {
   TokenizeResponse,
   ProgressResponse,
 } from '@/workers/tokenizer.worker';
+import { logger } from '@/lib/utils/logger';
 
 type MessageHandler = (response: TokenizeResponse | ProgressResponse) => void;
 
@@ -45,10 +46,10 @@ export class TokenizerWorker {
       };
 
       this.worker.onerror = (error) => {
-        console.error('Tokenizer worker error:', error);
+    logger.error('repo2txt', 'Tokenizer worker error:', error);
       };
     } catch (error) {
-      console.warn('Failed to create tokenizer worker:', error);
+    logger.warn('repo2txt', 'Failed to create tokenizer worker:', error);
       this.worker = null;
     }
   }

@@ -5,6 +5,7 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/utils/logger';
 
 import type { FileSystemDirectoryHandle } from '@/types';
 
@@ -35,7 +36,7 @@ export function DirectoryPicker({ onDirectorySelected, disabled }: DirectoryPick
         inputRef.current?.click();
       }
     } catch (err) {
-      console.error('Directory selection failed:', err);
+      logger.error('repo2txt', 'Directory selection failed:', err);
     }
   };
 

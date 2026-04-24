@@ -6,6 +6,7 @@ import { useStore } from '@/store';
 import { useLoadQueue } from '@/hooks/useLoadQueue';
 import type { FileSystemDirectoryHandle } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
+import { logger } from '@/lib/utils/logger';
 
 
 interface UseProviderLoaderOpts {
@@ -57,7 +58,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
         setNodes(fetchedNodes);
       } catch (err) {
-        console.error('Failed to load files:', err);
+      logger.error('repo2txt', 'Failed to load files:', err);
 
         if (err instanceof Error && err.name === 'AbortError') {
           if (typeof chrome !== 'undefined' && chrome.storage?.session) {
