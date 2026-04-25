@@ -3,6 +3,7 @@
  * Manages processing state and badge notifications
  */
 
+import { logger } from '@/lib/utils';
 interface ProcessingState {
   repoUrl: string;
   status: 'loading' | 'loaded' | 'generating';
@@ -28,7 +29,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to store processing state:', error);
+      logger.error('background', 'Failed to store processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -59,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to update processing status:', error);
+      logger.error('background', 'Failed to update processing status:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -75,7 +76,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to clear processing state:', error);
+      logger.error('background', 'Failed to clear processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -93,7 +94,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to get processing state:', error);
+      logger.error('background', 'Failed to get processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -163,7 +164,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
           error: 'Request aborted',
         });
       } else {
-        console.error('repo2txt: Failed to fetch GitHub page:', error);
+        logger.error('background', 'Failed to fetch GitHub page:', error);
         sendResponse({
           success: false,
           status: 0,
@@ -259,7 +260,7 @@ if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
             error: 'Request aborted',
           });
         } else {
-          console.error('repo2txt: Failed to fetch diff:', error);
+        logger.error('background', 'Failed to fetch diff:', error);
           sendResponse({
             success: false,
             status: 0,
