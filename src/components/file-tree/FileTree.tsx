@@ -6,6 +6,7 @@
 import { useRef, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { FileTreeNode } from './FileTreeNode';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { TreeNode } from '@/types';
 
 interface FileTreeProps {
@@ -70,24 +71,15 @@ export function FileTree({
 
   if (nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-gray-500 dark:text-gray-400">
-        <div className="text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-            />
+      <EmptyState
+        icon={
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <p className="mt-2 text-sm">No files to display</p>
-        </div>
-      </div>
+        }
+        title="No files to display"
+        description="Load a repository or select local files to see the file tree."
+      />
     );
   }
 
@@ -95,7 +87,7 @@ export function FileTree({
     <div
       ref={parentRef}
       data-testid="file-tree"
-      className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-auto bg-white dark:bg-gray-900"
+      className="border border-stroke rounded-lg overflow-auto bg-surface"
       style={{ maxHeight: `${maxHeight}px` }}
     >
       <div

@@ -1,0 +1,24 @@
+{
+  "head": "refs/heads/main",
+  "remotes": {
+    "origin": {
+      "name": "origin",
+      "url": "git+ssh://git@github.com/michael-farah/repo2txt-extension.git",
+      "fetch_specs": [
+        "refs/heads/*:refs/remotes/origin/*"
+      ],
+      "params": {}
+    }
+  },
+  "backups": {
+    "backup_export": {
+      "name": "backup_export",
+      "url": "file:///home/ubuntu/Projects/repo2txt-extension/.beads/backup",
+      "fetch_specs": [
+        "refs/heads/*:refs/remotes/backup_export/*"
+      ],
+      "params": {}
+    }
+  },
+  "branches": {}
+}

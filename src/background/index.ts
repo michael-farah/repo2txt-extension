@@ -13,14 +13,7 @@ interface ProcessingState {
 
 // Track pending requests for cancellation
 const pendingRequests = new Map<string, AbortController>();
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Security: only process messages from our own extension
-  if (sender.id !== chrome.runtime.id) {
-    console.warn('repo2txt: rejected message from unknown sender:', sender.id);
-    sendResponse({ success: false, error: 'Unauthorized sender' });
-    return false;
-  }
-
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // Handle OPEN_POPUP_WITH_REPO - store processing state and set badge
   if (message.type === 'OPEN_POPUP_WITH_REPO' && message.repoUrl) {
     const processingState: ProcessingState = {
@@ -37,7 +30,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        logger.error('repo2txt', 'Failed to store processing state:', error);
+      logger.error('repo2txt', 'Failed to store processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -68,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        logger.error('repo2txt', 'Failed to update processing status:', error);
+      logger.error('repo2txt', 'Failed to update processing status:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -84,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        logger.error('repo2txt', 'Failed to clear processing state:', error);
+      logger.error('repo2txt', 'Failed to clear processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -102,21 +95,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       })
       .catch((error: Error) => {
-        logger.error('repo2txt', 'Failed to get processing state:', error);
+      logger.error('repo2txt', 'Failed to get processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
     return true;
   }
 
-  /**
-   * Handle GITHUB_WEB_FETCH - fetch github.com pages from the service worker.
-   * Chrome MV3 service workers can use fetch() with credentials: 'include' when
-   * the extension has host_permissions for the target domain. This allows
-   * fetching GitHub pages with the user's _gh_sess cookie included.
-   */
-  if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
-    const { url, requestId } = message as { url: string; requestId?: string };
+/**
+ * Handle GITHUB_WEB_FETCH - fetch github.com pages from the service worker.
+ * Chrome MV3 service workers can use fetch() with credentials: 'include' when
+ * the extension has host_permissions for the target domain. This allows
+ * fetching GitHub pages with the user's _gh_sess cookie included.
+ */
+if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
+  const { url, requestId } = message as { url: string; requestId?: string };
 
   // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
   // Using URL parsing to prevent bypasses like github.com.evil.com or github.com@evil.com
@@ -155,7 +148,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   fetch(url, { credentials: 'include', signal: controller.signal })
     .then(async (response) => {
       const html = await response.text();
-      logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
+    logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
       sendResponse({
         success: response.ok,
         status: response.status,
@@ -164,7 +157,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     .catch((error: Error) => {
       if (error.name === 'AbortError') {
-        logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → aborted`);
+      logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → aborted`);
         sendResponse({
           success: false,
           status: 0,
@@ -172,7 +165,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           error: 'Request aborted',
         });
       } else {
-        logger.error('repo2txt', 'Failed to fetch GitHub page:', error);
+      logger.error('repo2txt', 'Failed to fetch GitHub page:', error);
         sendResponse({
           success: false,
           status: 0,
@@ -189,20 +182,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
 
   return true;
-  }
+}
 
-  // Handle ABORT_GITHUB_FETCH - cancel a pending request
-  if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
-    const controller = pendingRequests.get(message.requestId);
-    if (controller) {
-      controller.abort();
-      pendingRequests.delete(message.requestId);
-      sendResponse({ success: true });
-    } else {
-      sendResponse({ success: false, error: 'Request not found' });
-    }
-    return true;
+// Handle ABORT_GITHUB_FETCH - cancel a pending request
+if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
+  const controller = pendingRequests.get(message.requestId);
+  if (controller) {
+    controller.abort();
+    pendingRequests.delete(message.requestId);
+    sendResponse({ success: true });
+  } else {
+    sendResponse({ success: false, error: 'Request not found' });
   }
+  return true;
+}
 });
 
 // Listen for session storage changes to manage badge

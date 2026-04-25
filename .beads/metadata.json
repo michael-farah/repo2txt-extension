@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "refactor",
+  "project_id": "c08213b4-09c0-400f-8205-7536931d7d13"
+}

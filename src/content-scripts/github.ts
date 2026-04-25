@@ -365,7 +365,7 @@ function injectButton(): void {
   // Find container
   const container = findButtonContainer();
   if (!container) {
-      logger.info('repo2txt', 'Could not find button container');
+    logger.info('repo2txt', 'Could not find button container');
     return;
   }
 
@@ -392,21 +392,8 @@ function injectButton(): void {
           type: 'OPEN_POPUP_WITH_REPO',
           repoUrl: repoUrl,
         })
-        .then((response) => {
-          // Validate response structure
-          if (response && typeof response === 'object' && response.success === true) {
-            // Message handled successfully by background script
-            return;
-          }
-          // Invalid or unexpected response — fall back to clipboard
-          navigator.clipboard.writeText(repoUrl).then(() => {
-            alert(
-              `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
-            );
-          });
-        })
         .catch(() => {
-          // Extension context unavailable — fall back to clipboard
+          // Fallback: copy URL to clipboard
           navigator.clipboard.writeText(repoUrl).then(() => {
             showToast('Repository URL copied to clipboard. Open the repo2txt extension and paste the URL.', 'success');
           });
@@ -421,7 +408,7 @@ function injectButton(): void {
 
   // Insert button
   container.appendChild(button);
-    logger.info('repo2txt', 'Button injected successfully');
+  logger.info('repo2txt', 'Button injected successfully');
 }
 
 let observer: MutationObserver | null = null;

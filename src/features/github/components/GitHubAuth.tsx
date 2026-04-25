@@ -49,10 +49,10 @@ export function GitHubAuth() {
     <div className="space-y-1.5">
       <label
         htmlFor="github-token"
-        className="flex items-center text-xs font-medium text-gray-700 dark:text-gray-300"
+      className="flex items-center text-xs font-medium text-content"
       >
         Personal Access Token
-        <span className="ml-1 text-gray-500 dark:text-gray-400">(optional)</span>
+        <span className="ml-1 text-content-muted">(optional)</span>
         <button
           type="button"
           onClick={() => setShowInfo(!showInfo)}
@@ -105,7 +105,7 @@ export function GitHubAuth() {
           value={token}
           onChange={handleTokenChange}
           placeholder="ghp_..."
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+          className="flex-1 rounded-md border border-stroke bg-surface-raised px-2.5 py-1.5 text-xs text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
         />
         {token && (
           <Button

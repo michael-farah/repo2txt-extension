@@ -7,6 +7,7 @@ import { encode } from 'gpt-tokenizer';
 import { getTokenizerWorker } from './TokenizerWorker';
 import { logger } from '@/lib/utils/logger';
 import type { TreeNode, FileContent, FormattedOutput } from '@/types';
+import { logger } from '@/lib/utils/logger';
 
 export class Formatter {
   /**

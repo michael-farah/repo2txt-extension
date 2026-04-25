@@ -45,9 +45,9 @@ export function GitIgnoreEditor({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPatterns(initialPatterns.join('\n'));
-
+     
     setLocalShowExcluded(showExcluded);
-
+     
     setHasChanges(false);
   }, [initialPatterns, showExcluded]);
 
@@ -96,7 +96,7 @@ export function GitIgnoreEditor({
     <div className="space-y-3">
       {/* Summary */}
       <div className="flex items-center justify-end">
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-content-muted">
           {patternCount} {patternCount === 1 ? 'pattern' : 'patterns'}
         </span>
       </div>
@@ -107,37 +107,30 @@ export function GitIgnoreEditor({
           value={patterns}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="# Enter gitignore patterns (one per line)&#10;node_modules/&#10;*.log&#10;.env"
-          className="w-full h-48 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-mono text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
+          className="w-full h-48 rounded-md border border-stroke bg-surface-raised px-3 py-2 text-sm font-mono text-content placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
         />
 
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          <p>
-            • Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">#</code> for comments
-          </p>
-          <p>
-            • Add <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">/</code> at the end
-            for directories
-          </p>
-          <p>
-            • Use <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">*</code> for wildcards
-          </p>
+        <div className="text-xs text-content-muted">
+          <p>• Use <code className="bg-surface-sunken px-1 rounded">#</code> for comments</p>
+          <p>• Add <code className="bg-surface-sunken px-1 rounded">/</code> at the end for directories</p>
+          <p>• Use <code className="bg-surface-sunken px-1 rounded">*</code> for wildcards</p>
         </div>
       </div>
 
       {/* Show excluded files toggle */}
       <div className="space-y-1">
-        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer min-h-[36px]">
+        <label className="flex items-center gap-2 p-2 rounded-md hover:bg-surface-raised cursor-pointer min-h-[36px]">
           <input
             type="checkbox"
             checked={localShowExcluded}
             onChange={(e) => handleCheckboxChange(e.target.checked)}
             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
           />
-          <span className="text-sm text-gray-900 dark:text-gray-100">
+        <span className="text-sm text-content">
             Show excluded files in directory tree
           </span>
         </label>
-        <p className="text-xs text-gray-500 dark:text-gray-400 pl-8">
+      <p className="text-xs text-content-muted pl-8">
           Controls visibility in output directory tree. Excluded file contents are never included.
         </p>
       </div>
@@ -153,7 +146,12 @@ export function GitIgnoreEditor({
         >
           Apply Patterns
         </Button>
-        <Button variant="secondary" size="sm" onClick={handleReset} className="flex-1">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleReset}
+          className="flex-1"
+        >
           Reset
         </Button>
       </div>
@@ -186,7 +184,7 @@ export function GitIgnoreEditor({
               <button
                 key={pattern}
                 onClick={() => handleAddSuggestion(pattern)}
-                className="text-left px-2 py-1 text-xs font-mono rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="text-left px-2 py-1 text-xs font-mono rounded bg-surface-sunken text-content hover:bg-surface-raised"
               >
                 {pattern}
               </button>

@@ -26,7 +26,7 @@ describe('GitIgnoreEditor', () => {
     const textarea = screen.getByPlaceholderText(/Enter gitignore patterns/);
     await userEvent.type(textarea, '\ndist/');
 
-    const applyButton = screen.getByText('Apply Patterns');
+  const applyButton = screen.getByRole('button', { name: /Apply Patterns/i });
     await userEvent.click(applyButton);
 
     expect(onApply).toHaveBeenCalledWith(['node_modules/', '*.log', '.env', 'dist/']);
@@ -50,7 +50,7 @@ describe('GitIgnoreEditor', () => {
     await userEvent.click(checkbox);
 
     // The callback is only called when Apply button is clicked
-    const applyButton = screen.getByText('Apply Patterns');
+  const applyButton = screen.getByRole('button', { name: /Apply Patterns/i });
     await userEvent.click(applyButton);
 
     expect(onToggleExcluded).toHaveBeenCalledWith(true);
@@ -59,7 +59,7 @@ describe('GitIgnoreEditor', () => {
   it('should disable Apply button when no changes', () => {
     render(<GitIgnoreEditor patterns={mockPatterns} />);
 
-    const applyButton = screen.getByText('Apply Patterns');
+  const applyButton = screen.getByRole('button', { name: /Apply Patterns/i });
     expect(applyButton).toBeDisabled();
   });
 
@@ -69,7 +69,7 @@ describe('GitIgnoreEditor', () => {
     const textarea = screen.getByPlaceholderText(/Enter gitignore patterns/);
     await userEvent.type(textarea, '\n# comment');
 
-    const applyButton = screen.getByText('Apply Patterns');
+  const applyButton = screen.getByRole('button', { name: /Apply Patterns/i });
     expect(applyButton).not.toBeDisabled();
   });
 

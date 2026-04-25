@@ -73,10 +73,7 @@ export function useGeneration(opts: UseGenerationOpts) {
 
       // Fetch file contents with abort support
       const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(
-        selectedNodes,
-        abortController.signal
-      )) {
+      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
         fileContents.push(content);
       }
 
@@ -109,9 +106,9 @@ export function useGeneration(opts: UseGenerationOpts) {
       const formattedOutput = await Formatter.formatAsync(
         fullTree,
         fileContents,
-        (_progress, _current, _total) => {
+        (progress, current, total) => {
           // Progress callback - could show progress UI here
-      logger.debug(`repo2txt`, `Tokenizing: ${_current}/${_total} files (${_progress.toFixed(1)}%)`);
+      logger.info('repo2txt', `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
         }
       );
 
@@ -121,7 +118,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (err) {
-      logger.error('repo2txt', 'Failed to generate output:', err);
+    logger.error('repo2txt', 'Failed to generate output:', err);
 
       // Don't show error dialog for aborted requests
       if (err instanceof Error && err.name === 'AbortError') {
@@ -136,8 +133,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         });
       } else {
         onError({
-          message:
-            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
+          message: err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
         });
       }
     } finally {

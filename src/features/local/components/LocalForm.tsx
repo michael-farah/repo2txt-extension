@@ -25,7 +25,7 @@ export function LocalForm({ onDirectorySelected, onZipSelected, disabled }: Loca
   return (
     <div className="space-y-4">
       {/* Tab selector */}
-      <div className="flex space-x-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+      <div className="flex space-x-1 rounded-lg bg-surface-sunken p-1">
         <button
           onClick={() => handleTabChange('directory')}
           data-testid="local-tab-directory"
@@ -33,8 +33,8 @@ export function LocalForm({ onDirectorySelected, onZipSelected, disabled }: Loca
           flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
           ${
             localTab === 'directory'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            ? 'bg-surface shadow text-content'
+            : 'text-content-muted hover:text-content'
           }
         `}
         >
@@ -60,8 +60,8 @@ export function LocalForm({ onDirectorySelected, onZipSelected, disabled }: Loca
           flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] transition-transform duration-100
           ${
             localTab === 'zip'
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+            ? 'bg-surface shadow text-content'
+            : 'text-content-muted hover:text-content'
           }
         `}
         >

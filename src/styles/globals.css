@@ -4,26 +4,63 @@
 
 @layer base {
   :root {
+    /* Surface */
+    --surface: 255 255 255;
+    --surface-raised: 249 250 251;
+    --surface-overlay: 255 255 255;
+    --surface-sunken: 243 244 246;
+
+    /* Content */
+    --content: 17 24 39;
+    --content-muted: 107 114 128;
+    --content-subtle: 156 163 175;
+
+    /* Stroke (border colors) — named stroke to avoid Tailwind conflict */
+    --stroke: 229 231 235;
+    --stroke-subtle: 243 244 246;
+
+    /* Effects */
+    --primary-glow: 99 102 241;
+
+    /* Layout */
+    --popup-width: 600px;
+    --popup-min-height: 500px;
+
+    /* Legacy compat */
     --color-bg-primary: 255 255 255;
     --color-bg-secondary: 249 250 251;
     --color-text-primary: 17 24 39;
     --color-text-secondary: 107 114 128;
     --color-border: 229 231 235;
-    --color-accent: 59 130 246;
-    --popup-width: 600px;
-    --popup-min-height: 500px;
+    --color-accent: 99 102 241;
   }
 
   .dark {
+    --surface: 17 24 39;
+    --surface-raised: 30 41 59;
+    --surface-overlay: 30 41 55;
+    --surface-sunken: 15 23 42;
+
+    --content: 243 244 246;
+    --content-muted: 156 163 175;
+    --content-subtle: 107 114 128;
+
+    --stroke: 51 65 85;
+    --stroke-subtle: 30 41 59;
+
+    --primary-glow: 129 140 248;
+
+    /* Legacy compat */
     --color-bg-primary: 17 24 39;
     --color-bg-secondary: 31 41 55;
     --color-text-primary: 243 244 246;
     --color-text-secondary: 156 163 175;
     --color-border: 55 65 81;
-    --color-accent: 96 165 250;
+    --color-accent: 129 140 248;
   }
 
   body {
+<<<<<<< HEAD
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
     font-family:
       system-ui,
@@ -34,8 +71,16 @@
       'Helvetica Neue',
       Arial,
       sans-serif;
+=======
+    background-color: rgba(var(--surface), 1);
+    color: rgba(var(--content), 1);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+>>>>>>> feat/ui-overhaul
     width: var(--popup-width);
     min-height: var(--popup-min-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 200ms ease-out, color 200ms ease-out;
   }
 }
 
@@ -59,6 +104,32 @@
   }
   .press-scale:active {
     transform: scale(0.97);
+  }
+
+  /* Shimmer loading background */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      var(--shimmer-from, #f9fafb) 25%,
+      var(--shimmer-to, #ffffff) 50%,
+      var(--shimmer-from, #f9fafb) 75%
+    );
+    background-size: 200% 100%;
+  }
+
+  .dark .shimmer-bg {
+    --shimmer-from: #1e293b;
+    --shimmer-to: #0f172a;
+  }
+
+  /* Indeterminate progress bar */
+  .animate-indeterminate {
+    animation: indeterminate 1.5s ease-in-out infinite;
+  }
+
+  /* Copy success flash */
+  .animate-copy-success {
+    animation: copySuccess 600ms ease-out forwards;
   }
 }
 
@@ -94,3 +165,33 @@
     opacity: 1;
   }
 }
+<<<<<<< HEAD
+=======
+
+@keyframes indeterminate {
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
+}
+
+@keyframes copySuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+  30% {
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+>>>>>>> feat/ui-overhaul

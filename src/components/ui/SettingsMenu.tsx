@@ -17,12 +17,14 @@ function ToggleSetting({ label, description, checked, onChange }: ToggleSettingP
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="flex items-center justify-between w-full gap-3 rounded-md px-2 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+ className="flex items-center justify-between w-full gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-raised cursor-pointer"
     >
       <div className="flex flex-col items-start min-w-0">
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
+ <span className="text-sm font-medium text-content">
+          {label}
+        </span>
         {description && (
-          <span className="text-xs text-gray-500 dark:text-gray-400 leading-tight mt-0.5">
+ <span className="text-xs text-content-muted leading-tight mt-0.5">
             {description}
           </span>
         )}
@@ -30,7 +32,9 @@ function ToggleSetting({ label, description, checked, onChange }: ToggleSettingP
       <span
         className={cn(
           'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ease-in-out',
-          checked ? 'bg-primary-600 dark:bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
+          checked
+            ? 'bg-primary-600 dark:bg-primary-500'
+ : 'bg-gray-300 dark:bg-gray-600'
         )}
       >
         <span
@@ -109,7 +113,7 @@ export function SettingsMenu() {
           viewBox="0 0 20 20"
           fill="currentColor"
           className={cn(
-            'w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform duration-300',
+ 'w-4 h-4 text-content-muted transition-transform duration-300',
             isOpen && 'rotate-90'
           )}
         >
@@ -126,8 +130,8 @@ export function SettingsMenu() {
         role="menu"
         aria-label="Settings"
         className={cn(
-          'absolute right-0 top-full mt-1.5 w-72 rounded-lg border border-gray-200 dark:border-gray-700',
-          'bg-white dark:bg-gray-900 shadow-lg z-50',
+ 'absolute right-0 top-full mt-1.5 w-72 rounded-lg border border-stroke-subtle',
+ 'bg-surface shadow-float z-50',
           'origin-top-right transition-all duration-200 ease-out',
           isOpen
             ? 'opacity-100 scale-100 translate-y-0'
@@ -135,12 +139,12 @@ export function SettingsMenu() {
         )}
       >
         <div className="px-3 pt-3 pb-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+ <h3 className="text-xs font-semibold uppercase tracking-wider text-content-muted">
             Settings
           </h3>
         </div>
 
-        <div className="mx-3 border-t border-gray-100 dark:border-gray-800" />
+ <div className="mx-3 border-t border-stroke-subtle" />
 
         <div className="p-2 space-y-0.5">
           <ToggleSetting

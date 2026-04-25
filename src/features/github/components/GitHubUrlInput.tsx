@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { GitHubProvider } from '../GitHubProvider';
 
@@ -81,7 +82,7 @@ export function GitHubUrlInput({
     <div className="space-y-2">
       <label
         htmlFor="github-url"
-        className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
+        className="flex items-center text-sm font-medium text-content"
       >
         Repository URL
         <button
@@ -140,11 +141,12 @@ export function GitHubUrlInput({
               value={url}
               onChange={handleUrlChange}
               placeholder="https://github.com/facebook/react"
-              className={`w-full rounded-md border ${
-                error
-                  ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500'
-              } bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 dark:focus:ring-primary-400`}
+          className={cn(
+            'w-full rounded-md border bg-surface-raised px-3 py-2 text-sm text-content placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 dark:focus:ring-primary-400',
+            error
+              ? 'border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500'
+              : 'border-stroke focus:border-primary-500 focus:ring-primary-500'
+          )}
               aria-invalid={!!error}
               aria-describedby={error ? 'url-error' : undefined}
             />
