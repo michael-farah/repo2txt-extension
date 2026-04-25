@@ -1,15 +1,18 @@
-import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useChromeTab } from '@/hooks/useChromeTab';
 import { useGeneration } from '@/hooks/useGeneration';
 import { useProviderLoader } from '@/hooks/useProviderLoader';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { SettingsMenu } from '@/components/ui/SettingsMenu';
 import { ErrorDialog } from '@/components/ui/ErrorDialog';
+import { TokenWarning } from '@/components/ui/TokenWarning';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProviderSelector } from '@/components/ProviderSelector';
 import { AdvancedFilters } from '@/components/AdvancedFilters';
-import { FileTree } from '@/components/file-tree';
+import { FileTree, FileSearchBar } from '@/components/file-tree';
+import { RecentRepos } from '@/components/RecentRepos';
 import { OutputPanel } from '@/components/OutputPanel';
 import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { useStore } from '@/store';
@@ -18,6 +21,10 @@ import type {
   FileNode,
 } from '@/types';
 function App() {
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Get file tree state from store
   const {
@@ -37,12 +44,15 @@ function App() {
     getExtensionSelectionState,
     getGlobalSelectionState,
     selectAll,
-  deselectAll,
-  setShowExcludedFiles,
-  showTokenCount,
-  showLineCount,
-  autoExpandDirectories,
-} = useStore((state) => state);
+    deselectAll,
+    setShowExcludedFiles,
+    showTokenCount,
+    showLineCount,
+    autoExpandDirectories,
+    recentRepos,
+    removeRecentRepo,
+    repoUrl: currentStoreRepoUrl,
+  } = useStore((state) => state);
 
   // Ref to hold output clear callback (set later after useGeneration provides setOutput)
   const clearOutputRef = useRef<() => void>(() => {});
@@ -55,6 +65,7 @@ function App() {
     handleGitHubSubmit,
     handleLocalDirectorySubmit,
     handleLocalZipSubmit,
+    switchToRepo,
     setError,
     shouldAutoExpandRootRef,
     resetProviderState,
@@ -196,6 +207,23 @@ function App() {
   useEffect(() => {
     clearOutputRef.current = () => setOutput(null);
   });
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onSearch: () => setSearchFocused(true),
+    onEscape: () => {
+      if (searchQuery) {
+        setSearchQuery('');
+      } else if (searchFocused) {
+        setSearchFocused(false);
+      }
+    },
+    onSelectAll,
+    onDeselectAll,
+    onGenerate: handleGenerateOutput,
+    enabled: !isLoading && !isGenerating,
+  });
+
   return (
  <div className="min-h-[500px] w-[600px] mx-auto flex flex-col bg-surface shadow-raised rounded-lg overflow-hidden transition-colors duration-200">
 {/* Header */}
@@ -247,6 +275,14 @@ title="View on GitHub"
               disabled={isLoading}
               initialUrl={initialUrl}
               autoSubmitUrl={autoSubmitUrl}
+            />
+
+            {/* Recent Repos */}
+            <RecentRepos
+              repos={recentRepos}
+              onSelect={switchToRepo}
+              onRemove={removeRecentRepo}
+              currentUrl={currentStoreRepoUrl}
             />
           </section>
 
@@ -338,12 +374,21 @@ description="Enter a GitHub URL or select local files to start converting reposi
                 </div>
               </div>
 
+              {/* Search Bar */}
+              <FileSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                resultCount={flatNodeCount}
+                totalCount={totalNodeCount}
+              />
+
               <FileTree
                 nodes={tree}
                 onToggle={toggleExpanded}
                 onSelect={toggleSelection}
                   showExcluded={showExcludedFiles}
                 maxHeight={300}
+                searchQuery={searchQuery}
               />
             </div>
           </section>
@@ -355,6 +400,8 @@ description="Enter a GitHub URL or select local files to start converting reposi
                 Output
               </h2>
           <OutputPanel output={output} isLoading={isGenerating} repoName={repoName} showTokenCount={showTokenCount} showLineCount={showLineCount} />
+              {/* Token Warning */}
+              {output && <TokenWarning tokenCount={output.tokenCount} />}
             </section>
           )}
         </div>

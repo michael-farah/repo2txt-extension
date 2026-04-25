@@ -13,6 +13,7 @@ import type {
 } from '@/types';
 import type { IProvider, ParsedRepoInfo, RateLimiterConfig } from './types';
 import { ProviderError, ErrorCode } from './types';
+import { isBinaryFile } from '@/lib/utils/binaryDetection';
 
 export abstract class BaseProvider implements IProvider {
   protected credentials: ProviderCredentials | null = null;
@@ -62,6 +63,16 @@ export abstract class BaseProvider implements IProvider {
         ErrorCode.INVALID_URL,
         'Cannot fetch file: missing URL'
       );
+    }
+
+    // Skip binary files — return empty content with a marker
+    if (isBinaryFile(node.path)) {
+      return {
+        path: node.path,
+        text: '[binary file skipped]',
+        url: node.url,
+        lineCount: 0,
+      };
     }
 
     try {

@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { FileNode, TreeNode } from '@/types';
 import { type PatternResult, patternToRegex, getFileExtension } from '@/lib/utils/gitignore';
+import { shouldAutoExclude } from '@/lib/utils/binaryDetection';
 
 // Common code file extensions that should be selected by default
 export const CODE_EXTENSIONS = [
@@ -85,27 +86,36 @@ export const createFileTreeSlice: StateCreator<FileTreeSlice> = (set, get) => ({
     const extensionsMap = new Map<string, { count: number; selected: boolean }>();
     const NO_EXT_KEY = '(no extension)';
 
-    nodes.forEach((node) => {
-      if (node.type === 'blob') {
-        const ext = getFileExtension(node.path) || NO_EXT_KEY;
-        const current = extensionsMap.get(ext) || { count: 0, selected: false };
-        extensionsMap.set(ext, {
-          count: current.count + 1,
-          selected: ext === NO_EXT_KEY ? true : CODE_EXTENSIONS.includes(ext),
-        });
-      }
+ nodes.forEach((node) => {
+   if (node.type === 'blob') {
+     if (shouldAutoExclude(node.path)) {
+       // Count binary files in extensions map but never auto-select them
+       const ext = getFileExtension(node.path) || NO_EXT_KEY;
+       const current = extensionsMap.get(ext) || { count: 0, selected: false };
+       extensionsMap.set(ext, { count: current.count + 1, selected: false });
+       return;
+     }
+     const ext = getFileExtension(node.path) || NO_EXT_KEY;
+     const current = extensionsMap.get(ext) || { count: 0, selected: false };
+     extensionsMap.set(ext, {
+       count: current.count + 1,
+       selected: current.selected || (ext === NO_EXT_KEY ? true : CODE_EXTENSIONS.includes(ext)),
+     });
+   }
     });
 
-    // Auto-select files with code extensions and files without extensions
-    const selectedPaths = new Set<string>();
-    nodes.forEach((node) => {
-      if (node.type === 'blob') {
-        const ext = getFileExtension(node.path) || NO_EXT_KEY;
-        if (extensionsMap.get(ext)?.selected) {
-          selectedPaths.add(node.path);
-        }
-      }
-    });
+ // Auto-select files with code extensions and files without extensions
+ // Skip binary and low-value files entirely
+ const selectedPaths = new Set<string>();
+ nodes.forEach((node) => {
+   if (node.type === 'blob') {
+     if (shouldAutoExclude(node.path)) return;
+     const ext = getFileExtension(node.path) || NO_EXT_KEY;
+     if (extensionsMap.get(ext)?.selected) {
+       selectedPaths.add(node.path);
+     }
+   }
+ });
 
     set({ nodes, extensions: extensionsMap, selectedPaths });
   },

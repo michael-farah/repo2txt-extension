@@ -5,9 +5,9 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { logger } from '@/lib/utils/logger';
 
 import type { FileSystemDirectoryHandle } from '@/types';
+import { logger } from '@/lib/utils/logger';
 
 interface DirectoryPickerProps {
   onDirectorySelected?: (files: FileList | FileSystemDirectoryHandle) => void;
@@ -36,7 +36,7 @@ export function DirectoryPicker({ onDirectorySelected, disabled }: DirectoryPick
         inputRef.current?.click();
       }
     } catch (err) {
-      logger.error('repo2txt', 'Directory selection failed:', err);
+    logger.error('directory', 'Directory selection failed:', err);
     }
   };
 
@@ -117,7 +117,7 @@ export function DirectoryPicker({ onDirectorySelected, disabled }: DirectoryPick
         </div>
       )}
 
-      <div className="text-xs text-content-muted">
+      <div className="text-xs text-gray-500 dark:text-gray-400">
         <p>Select a directory from your device to upload all files.</p>
         <p className="mt-1">
           <strong>Note:</strong> Large directories may take time to process.

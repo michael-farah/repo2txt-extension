@@ -1,10 +1,9 @@
-import { logger } from '@/lib/utils/logger';
-
 /**
  * Background service worker for repo2txt extension
  * Manages processing state and badge notifications
  */
 
+import { logger } from '@/lib/utils';
 interface ProcessingState {
   repoUrl: string;
   status: 'loading' | 'loaded' | 'generating';
@@ -30,7 +29,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-      logger.error('repo2txt', 'Failed to store processing state:', error);
+      logger.error('background', 'Failed to store processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -61,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-      logger.error('repo2txt', 'Failed to update processing status:', error);
+      logger.error('background', 'Failed to update processing status:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -77,7 +76,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-      logger.error('repo2txt', 'Failed to clear processing state:', error);
+      logger.error('background', 'Failed to clear processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -95,7 +94,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       })
       .catch((error: Error) => {
-      logger.error('repo2txt', 'Failed to get processing state:', error);
+      logger.error('background', 'Failed to get processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -137,7 +136,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
     return true;
   }
 
-  logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url}`);
+  console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url}`);
 
   // Create AbortController for this request
   const controller = new AbortController();
@@ -148,7 +147,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
   fetch(url, { credentials: 'include', signal: controller.signal })
     .then(async (response) => {
       const html = await response.text();
-    logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
+      console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
       sendResponse({
         success: response.ok,
         status: response.status,
@@ -157,7 +156,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
     })
     .catch((error: Error) => {
       if (error.name === 'AbortError') {
-      logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → aborted`);
+        console.debug(`[repo2txt] GITHUB_WEB_FETCH: ${url} → aborted`);
         sendResponse({
           success: false,
           status: 0,
@@ -165,7 +164,7 @@ if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
           error: 'Request aborted',
         });
       } else {
-      logger.error('repo2txt', 'Failed to fetch GitHub page:', error);
+        logger.error('background', 'Failed to fetch GitHub page:', error);
         sendResponse({
           success: false,
           status: 0,
@@ -196,6 +195,91 @@ if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
   }
   return true;
 }
+
+  // Handle FETCH_DIFF - fetch .diff files from GitHub with session cookies
+  if (message.type === 'FETCH_DIFF' && message.url) {
+    const { url, requestId } = message as { url: string; requestId?: string };
+
+    // Security: validate URL targets github.com and ends with .diff
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      sendResponse({
+        success: false,
+        status: 0,
+        diffText: '',
+        error: 'Invalid URL: must be a github.com .diff URL',
+      });
+      return true;
+    }
+
+    // Must be https://github.com and end with .diff
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.hostname !== 'github.com') {
+      sendResponse({
+        success: false,
+        status: 0,
+        diffText: '',
+        error: 'Invalid URL: must be a github.com .diff URL',
+      });
+      return true;
+    }
+
+    if (!parsedUrl.pathname.endsWith('.diff')) {
+      sendResponse({
+        success: false,
+        status: 0,
+        diffText: '',
+        error: 'Invalid URL: must end with .diff extension',
+      });
+      return true;
+    }
+
+    // Create AbortController for this request
+    const controller = new AbortController();
+    if (requestId) {
+      pendingRequests.set(requestId, controller);
+    }
+
+    fetch(url, { credentials: 'include', signal: controller.signal })
+      .then(async (response) => {
+        const diffText = await response.text();
+        sendResponse({
+          success: response.ok,
+          status: response.status,
+          diffText,
+          error: response.ok ? undefined : `HTTP ${response.status}`,
+        });
+      })
+      .catch((error: Error) => {
+        if (error.name === 'AbortError') {
+          sendResponse({
+            success: false,
+            status: 0,
+            diffText: '',
+            error: 'Request aborted',
+          });
+        } else {
+        logger.error('background', 'Failed to fetch diff:', error);
+          sendResponse({
+            success: false,
+            status: 0,
+            diffText: '',
+            error: error.message,
+          });
+        }
+      })
+      .finally(() => {
+        // Clean up the pending request
+        if (requestId) {
+          pendingRequests.delete(requestId);
+        }
+      });
+
+    return true;
+  }
+
+  return true;
 });
 
 // Listen for session storage changes to manage badge

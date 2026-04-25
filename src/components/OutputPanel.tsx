@@ -1,18 +1,15 @@
 /**
  * Output panel component
  * Displays formatted output with download and copy functionality
- * Features gradient progress bar, copy success animation, semantic tokens
  */
 
 import { useState } from 'react';
 import JSZip from 'jszip';
 import { Button } from './ui/Button';
 import { FileStats } from './FileStats';
-import { Skeleton } from './ui/Skeleton';
-import { cn } from '@/lib/utils/cn';
-import { logger } from '@/lib/utils/logger';
 import { sanitizeFilename } from '@/lib/utils/repoName';
 import type { FormattedOutput } from '@/types';
+import { logger } from '@/lib/utils/logger';
 
 interface OutputPanelProps {
   output: FormattedOutput | null;
@@ -44,7 +41,7 @@ export function OutputPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      logger.error('repo2txt', 'Failed to copy:', error);
+    logger.error('output', 'Failed to copy:', error);
     }
   };
 
@@ -119,38 +116,30 @@ export function OutputPanel({
         }
       }
     } catch (error) {
-      logger.error('repo2txt', 'Failed to download:', error);
+    logger.error('output', 'Failed to download:', error);
       setDownloadError(error instanceof Error ? error.message : 'Download failed. Please try again.');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // Loading state with gradient progress bar
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {/* Progress bar */}
-        <div className="h-1.5 rounded-full bg-surface-sunken overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-primary-500 via-primary-400 to-primary-600 animate-indeterminate" />
+      <div className="flex items-center justify-center h-48 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+          <p className="mt-1.5 text-xs text-gray-600 dark:text-gray-400">Loading files...</p>
         </div>
-
-        <div className="flex items-center justify-between p-2 rounded-lg border border-stroke bg-surface-raised">
-          <span className="text-xs text-content-muted">Generating output...</span>
-          <Skeleton variant="text" width="60px" />
-        </div>
-
-        <Skeleton variant="rectangle" count={4} className="h-4" />
       </div>
     );
   }
 
   if (!output) {
     return (
-      <div className="flex items-center justify-center h-48 border border-stroke rounded-lg bg-surface">
-        <div className="text-center text-content-muted">
+      <div className="flex items-center justify-center h-48 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+        <div className="text-center text-gray-500 dark:text-gray-400">
           <svg
-            className="mx-auto h-10 w-10 text-content-subtle"
+            className="mx-auto h-10 w-10 text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -173,43 +162,31 @@ export function OutputPanel({
   return (
     <div className="space-y-1.5">
       {/* Stats + Actions Row */}
-      <div className={cn(
-        'flex items-center justify-between p-2 rounded-lg border border-stroke bg-surface-raised gap-2 transition-colors',
-        copied && 'animate-copy-success'
-      )}>
+      <div className="flex items-center justify-between p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 gap-2 transition-colors">
         {/* Compact Stats Pills */}
-        <div className="flex items-center gap-1.5">
-          {showLineCount && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 border border-stroke-subtle">
-              <svg className="w-3 h-3 text-content-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
-              </svg>
-              <span className="text-[11px] text-content-muted">Lines</span>
-              <span className="text-xs font-semibold text-content">{output.lineCount.toLocaleString()}</span>
-            </span>
-          )}
-          {showTokenCount && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 border border-stroke-subtle">
-              <svg className="w-3 h-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l3.5 7L5 17h14l-3.5-7L19 3H5z" />
-              </svg>
-              <span className="text-[11px] text-content-muted">Tokens</span>
-              <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{output.tokenCount.toLocaleString()}</span>
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 border border-stroke-subtle">
-            <svg className="w-3 h-3 text-content-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-[11px] text-content-muted">Files</span>
-            <span className="text-xs font-semibold text-content">{output.files?.length || 0}</span>
-          </span>
-        </div>
+      <div className="flex items-center gap-1.5">
+        {showLineCount && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Lines</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.lineCount.toLocaleString()}</span>
+        </span>
+        )}
+        {showTokenCount && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Tokens</span>
+          <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{output.tokenCount.toLocaleString()}</span>
+        </span>
+        )}
+        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-700 px-2 py-0.5 border border-gray-200 dark:border-gray-600">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">Files</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{output.files?.length || 0}</span>
+        </span>
+      </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
           <Button
-            variant={copied ? 'success' : 'secondary'}
+            variant="secondary"
             size="sm"
             onClick={handleCopy}
             title="Copy to clipboard"
@@ -217,7 +194,7 @@ export function OutputPanel({
           >
             {copied ? (
               <>
-                <svg className="w-3 h-3 mr-1 animate-scale-in" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -249,7 +226,7 @@ export function OutputPanel({
           <select
             value={downloadFormat}
             onChange={(e) => { setDownloadFormat(e.target.value as 'txt' | 'md' | 'zip'); setDownloadError(null); }}
-            className="h-7 rounded border border-stroke bg-surface px-1.5 text-xs text-content focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 text-xs text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             title="Select download format"
             aria-label="Download format"
           >
@@ -294,16 +271,16 @@ export function OutputPanel({
       </div>
 
       {downloadError && (
-        <p className="text-xs text-danger-600 dark:text-danger-400 px-2">{downloadError}</p>
+        <p className="text-xs text-red-600 dark:text-red-400 px-2">{downloadError}</p>
       )}
 
       {/* Per-file statistics */}
       {output.files && output.files.length > 0 && <FileStats files={output.files} />}
 
-      {/* Output preview with left accent border */}
-      <div className="rounded-lg border border-stroke bg-surface overflow-hidden">
-        <div className="border-l-2 border-primary-300 dark:border-primary-700 p-2 max-h-48 overflow-auto">
-          <pre className="text-[11px] font-mono text-content whitespace-pre-wrap">
+      {/* Output preview */}
+      <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="p-2 max-h-48 overflow-auto">
+          <pre className="text-[11px] font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
             {fullText}
           </pre>
         </div>

@@ -108,7 +108,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         fileContents,
         (progress, current, total) => {
           // Progress callback - could show progress UI here
-      logger.info('repo2txt', `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
+    logger.info('generation', `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
         }
       );
 
@@ -118,7 +118,7 @@ export function useGeneration(opts: UseGenerationOpts) {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (err) {
-    logger.error('repo2txt', 'Failed to generate output:', err);
+      logger.error('generation', 'Failed to generate output:', err);
 
       // Don't show error dialog for aborted requests
       if (err instanceof Error && err.name === 'AbortError') {
