@@ -1,465 +1,230 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 
-// Store message handlers for testing
-const messageHandlers: Array<(
+// Store the message handler
+let messageHandler: (
   message: unknown,
-  sender: unknown,
+  sender: chrome.runtime.MessageSender,
   sendResponse: (response: unknown) => void
-) => boolean | void> = [];
+) => boolean | undefined;
 
-const storageChangeHandlers: Array<(changes: unknown) => void> = [];
-
-// Mock chrome APIs
-const mockStorageSession = {
-  set: vi.fn(),
-  get: vi.fn(),
-  remove: vi.fn(),
-  onChanged: {
-    addListener: vi.fn((handler: (changes: unknown) => void) => {
-      storageChangeHandlers.push(handler);
-    }),
-  },
-};
-
-const mockStorageLocal = {
-  get: vi.fn(),
-};
-
-const mockAction = {
-  setBadgeText: vi.fn(),
-  setBadgeBackgroundColor: vi.fn(),
-};
-
-const mockOnMessage = {
-  addListener: vi.fn((handler) => {
-    messageHandlers.push(handler);
-  }),
-};
-
-// Mock global chrome before any imports
-Object.defineProperty(global, 'chrome', {
-  value: {
-    runtime: {
-      onMessage: mockOnMessage,
-    },
-    storage: {
-      session: mockStorageSession,
-      local: mockStorageLocal,
-      onChanged: {
-        addListener: vi.fn((handler) => {
-          storageChangeHandlers.push(handler);
-        }),
+// Mock chrome APIs before importing
+vi.stubGlobal('chrome', {
+  runtime: {
+    onMessage: {
+      addListener: (handler: typeof messageHandler) => {
+        messageHandler = handler;
       },
     },
-    action: mockAction,
+    sendMessage: vi.fn(),
   },
-  writable: true,
-  configurable: true,
+  storage: {
+    session: {
+      set: vi.fn(),
+      get: vi.fn(),
+      remove: vi.fn(),
+      onChanged: {
+        addListener: vi.fn(),
+      },
+    },
+    local: {
+      onChanged: {
+        addListener: vi.fn(),
+      },
+    },
+  },
+  action: {
+    setBadgeText: vi.fn(),
+    setBadgeBackgroundColor: vi.fn(),
+  },
 });
 
 // Mock fetch
-const mockFetch = vi.fn();
-Object.defineProperty(global, 'fetch', {
-  value: mockFetch,
-  writable: true,
-  configurable: true,
-});
+global.fetch = vi.fn();
 
-describe('Background Service Worker', () => {
+describe('Background Script', () => {
+  beforeAll(async () => {
+    // Import the background script after mocking chrome
+    await import('../index');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
-    messageHandlers.length = 0;
-    storageChangeHandlers.length = 0;
-
-    // Reset mocks
-    mockStorageSession.set.mockResolvedValue(undefined);
-    mockStorageSession.get.mockResolvedValue({});
-    mockStorageSession.remove.mockResolvedValue(undefined);
-    mockStorageLocal.get.mockResolvedValue({});
-    mockAction.setBadgeText.mockResolvedValue(undefined);
-    mockAction.setBadgeBackgroundColor.mockResolvedValue(undefined);
-    mockFetch.mockReset();
-
-    // Import the module to register listeners
-    vi.resetModules();
   });
 
   afterEach(() => {
-    vi.resetModules();
+    vi.restoreAllMocks();
   });
 
-  const triggerMessage = async (
-    message: unknown,
-    sender: unknown = {}
-  ): Promise<{ response: unknown | null; returnedTrue: boolean }> => {
-    let response: unknown | null = null;
-    const sendResponse = (r: unknown) => {
-      response = r;
-    };
+  describe('FETCH_DIFF', () => {
+    it('should return diff text for valid github.com .diff URL', async () => {
+      const mockDiffText = 'diff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new';
 
-    // Import module to register handlers
-    await import('../index');
-
-    // Find the handler that returns true (async response)
-    let returnedTrue = false;
-    for (const handler of messageHandlers) {
-      const result = handler(message, sender, sendResponse);
-      if (result === true) {
-        returnedTrue = true;
-        // Wait for async operations
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-    }
-
-    return { response, returnedTrue };
-  };
-
-  describe('OPEN_POPUP_WITH_REPO message', () => {
-    it('should store processing state and set badge', async () => {
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'OPEN_POPUP_WITH_REPO',
-        repoUrl: 'https://github.com/owner/repo',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(mockStorageSession.set).toHaveBeenCalledWith({
-        processingState: expect.objectContaining({
-          repoUrl: 'https://github.com/owner/repo',
-          status: 'loading',
-          timestamp: expect.any(Number),
-        }),
-      });
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '1' });
-      expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({
-        color: '#4F46E5',
-      });
-      expect(response).toEqual({ success: true });
-    });
-
-    it('should handle storage errors gracefully', async () => {
-      mockStorageSession.set.mockRejectedValue(new Error('Storage error'));
-
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'OPEN_POPUP_WITH_REPO',
-        repoUrl: 'https://github.com/owner/repo',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(response).toEqual({
-        success: false,
-        error: 'Storage error',
-      });
-    });
-
-    it('should ignore messages without repoUrl', async () => {
-      const { returnedTrue } = await triggerMessage({
-        type: 'OPEN_POPUP_WITH_REPO',
-      });
-
-      expect(returnedTrue).toBe(false);
-      expect(mockStorageSession.set).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('UPDATE_PROCESSING_STATUS message', () => {
-    it('should update status and clear badge when loaded', async () => {
-      mockStorageSession.get.mockResolvedValue({
-        processingState: {
-          repoUrl: 'https://github.com/owner/repo',
-          status: 'loading',
-          timestamp: Date.now(),
-        },
-      });
-
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'UPDATE_PROCESSING_STATUS',
-        status: 'loaded',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(mockStorageSession.set).toHaveBeenCalledWith({
-        processingState: expect.objectContaining({
-          status: 'loaded',
-        }),
-      });
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
-      expect(response).toEqual({ success: true });
-    });
-
-    it('should update status without clearing badge for generating', async () => {
-      mockStorageSession.get.mockResolvedValue({
-        processingState: {
-          repoUrl: 'https://github.com/owner/repo',
-          status: 'loading',
-          timestamp: Date.now(),
-        },
-      });
-
-      const { returnedTrue } = await triggerMessage({
-        type: 'UPDATE_PROCESSING_STATUS',
-        status: 'generating',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(mockAction.setBadgeText).not.toHaveBeenCalledWith({ text: '' });
-    });
-  });
-
-  describe('CLEAR_PROCESSING_STATE message', () => {
-    it('should remove processing state and clear badge', async () => {
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'CLEAR_PROCESSING_STATE',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(mockStorageSession.remove).toHaveBeenCalledWith('processingState');
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
-      expect(response).toEqual({ success: true });
-    });
-  });
-
-  describe('GET_PROCESSING_STATE message', () => {
-    it('should return current processing state', async () => {
-      const mockState = {
-        repoUrl: 'https://github.com/owner/repo',
-        status: 'loading' as const,
-        timestamp: Date.now(),
-      };
-
-      mockStorageSession.get.mockResolvedValue({
-        processingState: mockState,
-      });
-
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'GET_PROCESSING_STATE',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(mockStorageSession.get).toHaveBeenCalledWith('processingState');
-      expect(response).toEqual({
-        success: true,
-        state: mockState,
-      });
-    });
-
-    it('should return undefined state when no state exists', async () => {
-      mockStorageSession.get.mockResolvedValue({});
-
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'GET_PROCESSING_STATE',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(response).toEqual({
-        success: true,
-        state: undefined,
-      });
-    });
-  });
-
-  describe('GITHUB_WEB_FETCH message', () => {
-    it('should fetch GitHub page with credentials', async () => {
-      const mockHtml = '<html>GitHub Page</html>';
-      mockFetch.mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        text: vi.fn().mockResolvedValue(mockHtml),
+        text: vi.fn().mockResolvedValueOnce(mockDiffText),
       });
 
-      const { returnedTrue } = await triggerMessage({
-        type: 'GITHUB_WEB_FETCH',
-        url: 'https://github.com/owner/repo',
-        requestId: 'req-123',
-      });
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://github.com/owner/repo/commit/abc123.diff',
+      };
 
-      expect(returnedTrue).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://github.com/owner/repo',
+      const result = messageHandler!(message, {}, sendResponse);
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(result).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://github.com/owner/repo/commit/abc123.diff',
         expect.objectContaining({
           credentials: 'include',
-          signal: expect.any(AbortSignal),
         })
       );
-
-      // Wait for fetch to complete
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        status: 200,
+        diffText: mockDiffText,
+      });
     });
 
-    it('should reject invalid URLs', async () => {
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'GITHUB_WEB_FETCH',
-        url: 'https://evil.com/github.com',
-        requestId: 'req-123',
-      });
+    it('should reject non-github.com URLs', async () => {
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://evil.com/owner/repo/commit/abc123.diff',
+      };
 
-      expect(returnedTrue).toBe(true);
-      expect(response).toEqual({
+      const result = messageHandler!(message, {}, sendResponse);
+
+      expect(result).toBe(true);
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
         success: false,
         status: 0,
-        html: '',
-        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
+        diffText: '',
+        error: 'Invalid URL: must be a github.com .diff URL',
       });
-      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should reject URLs without .diff extension', async () => {
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://github.com/owner/repo/commit/abc123',
+      };
+
+      const result = messageHandler!(message, {}, sendResponse);
+
+      expect(result).toBe(true);
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        status: 0,
+        diffText: '',
+        error: 'Invalid URL: must end with .diff extension',
+      });
     });
 
     it('should reject non-https URLs', async () => {
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'GITHUB_WEB_FETCH',
-        url: 'http://github.com/owner/repo',
-        requestId: 'req-123',
-      });
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'http://github.com/owner/repo/commit/abc123.diff',
+      };
 
-      expect(returnedTrue).toBe(true);
-      expect(response).toEqual({
+      const result = messageHandler!(message, {}, sendResponse);
+
+      expect(result).toBe(true);
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
         success: false,
         status: 0,
-        html: '',
-        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
+        diffText: '',
+        error: 'Invalid URL: must be a github.com .diff URL',
       });
     });
 
-    it('should handle fetch errors', async () => {
-      mockFetch.mockRejectedValue(new Error('Network error'));
-
-      const { returnedTrue } = await triggerMessage({
-        type: 'GITHUB_WEB_FETCH',
-        url: 'https://github.com/owner/repo',
-        requestId: 'req-123',
+    it('should handle 404 errors', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: vi.fn().mockResolvedValueOnce('Not Found'),
       });
 
-      expect(returnedTrue).toBe(true);
-      // Wait for error handling
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://github.com/owner/repo/commit/nonexistent.diff',
+      };
 
-    it('should handle abort errors', async () => {
-      const abortError = new Error('Aborted');
-      abortError.name = 'AbortError';
-      mockFetch.mockRejectedValue(abortError);
+      messageHandler!(message, {}, sendResponse);
 
-      const { returnedTrue } = await triggerMessage({
-        type: 'GITHUB_WEB_FETCH',
-        url: 'https://github.com/owner/repo',
-        requestId: 'req-123',
-      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(returnedTrue).toBe(true);
-      // Wait for error handling
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
-  });
-
-  describe('ABORT_GITHUB_FETCH message', () => {
-    it('should return error for non-existent request', async () => {
-      const { response, returnedTrue } = await triggerMessage({
-        type: 'ABORT_GITHUB_FETCH',
-        requestId: 'non-existent',
-      });
-
-      expect(returnedTrue).toBe(true);
-      expect(response).toEqual({
+      expect(sendResponse).toHaveBeenCalledWith({
         success: false,
-        error: 'Request not found',
-      });
-    });
-  });
-
-  describe('Unknown message types', () => {
-    it('should handle unknown message types gracefully', async () => {
-      const { returnedTrue } = await triggerMessage({
-        type: 'UNKNOWN_MESSAGE',
-        data: 'some data',
-      });
-
-      expect(returnedTrue).toBe(false);
-    });
-  });
-
-  describe('Storage change listener', () => {
-    beforeEach(async () => {
-      // Import module to register storage listeners
-      await import('../index');
-    });
-
-    it('should clear badge when processing state is removed', async () => {
-      const changes = {
-        processingState: {
-          oldValue: { repoUrl: 'test', status: 'loading', timestamp: 1 },
-          newValue: undefined,
-        },
-      };
-
-      for (const handler of storageChangeHandlers) {
-        handler(changes);
-      }
-
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
-    });
-
-    it('should set badge when processing state is added', async () => {
-      const changes = {
-        processingState: {
-          oldValue: undefined,
-          newValue: { repoUrl: 'test', status: 'loading', timestamp: 1 },
-        },
-      };
-
-      for (const handler of storageChangeHandlers) {
-        handler(changes);
-      }
-
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '1' });
-      expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({
-        color: '#4F46E5',
+        status: 404,
+        diffText: 'Not Found',
+        error: 'HTTP 404',
       });
     });
 
-    it('should clear badge when status changes to loaded', async () => {
-      const changes = {
-        processingState: {
-          oldValue: { repoUrl: 'test', status: 'loading', timestamp: 1 },
-          newValue: { repoUrl: 'test', status: 'loaded', timestamp: 1 },
-        },
+    it('should handle network failures', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Network error')
+      );
+
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://github.com/owner/repo/commit/abc123.diff',
       };
 
-      for (const handler of storageChangeHandlers) {
-        handler(changes);
-      }
+      messageHandler!(message, {}, sendResponse);
 
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '' });
-    });
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-    it('should set badge when status changes to generating', async () => {
-      const changes = {
-        processingState: {
-          oldValue: { repoUrl: 'test', status: 'loaded', timestamp: 1 },
-          newValue: { repoUrl: 'test', status: 'generating', timestamp: 1 },
-        },
-      };
-
-      for (const handler of storageChangeHandlers) {
-        handler(changes);
-      }
-
-      expect(mockAction.setBadgeText).toHaveBeenCalledWith({ text: '1' });
-      expect(mockAction.setBadgeBackgroundColor).toHaveBeenCalledWith({
-        color: '#4F46E5',
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: false,
+        status: 0,
+        diffText: '',
+        error: 'Network error',
       });
     });
 
-    it('should ignore non-processingState changes', async () => {
-      const changes = {
-        someOtherKey: {
-          oldValue: 'old',
-          newValue: 'new',
-        },
+    it('should support abort via requestId', async () => {
+      const mockDiffText = 'diff content';
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: vi.fn().mockResolvedValueOnce(mockDiffText),
+      });
+
+      const sendResponse = vi.fn();
+      const message = {
+        type: 'FETCH_DIFF',
+        url: 'https://github.com/owner/repo/commit/abc123.diff',
+        requestId: 'test-request-123',
       };
 
-      for (const handler of storageChangeHandlers) {
-        handler(changes);
-      }
+      messageHandler!(message, {}, sendResponse);
 
-      expect(mockAction.setBadgeText).not.toHaveBeenCalled();
+      // Now send abort message
+      const abortSendResponse = vi.fn();
+      const abortMessage = {
+        type: 'ABORT_GITHUB_FETCH',
+        requestId: 'test-request-123',
+      };
+
+      messageHandler!(abortMessage, {}, abortSendResponse);
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Abort should succeed
+      expect(abortSendResponse).toHaveBeenCalledWith({ success: true });
     });
   });
 });
