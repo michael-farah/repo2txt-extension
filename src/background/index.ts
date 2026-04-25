@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Background service worker for repo2txt extension
  * Manages processing state and badge notifications
@@ -11,7 +13,14 @@ interface ProcessingState {
 
 // Track pending requests for cancellation
 const pendingRequests = new Map<string, AbortController>();
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Security: only process messages from our own extension
+  if (sender.id !== chrome.runtime.id) {
+    console.warn('repo2txt: rejected message from unknown sender:', sender.id);
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
+
   // Handle OPEN_POPUP_WITH_REPO - store processing state and set badge
   if (message.type === 'OPEN_POPUP_WITH_REPO' && message.repoUrl) {
     const processingState: ProcessingState = {
@@ -28,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to store processing state:', error);
+        logger.error('repo2txt', 'Failed to store processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -59,7 +68,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to update processing status:', error);
+        logger.error('repo2txt', 'Failed to update processing status:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -75,7 +84,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to clear processing state:', error);
+        logger.error('repo2txt', 'Failed to clear processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -93,7 +102,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       })
       .catch((error: Error) => {
-        console.error('repo2txt: Failed to get processing state:', error);
+        logger.error('repo2txt', 'Failed to get processing state:', error);
         sendResponse({ success: false, error: error.message });
       });
 
@@ -109,73 +118,77 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
     const { url, requestId } = message as { url: string; requestId?: string };
 
-    // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
-    // Using URL parsing to prevent bypasses like github.com.evil.com or github.com@evil.com
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      sendResponse({
-        success: false,
-        status: 0,
-        html: '',
-        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
-      });
-      return true;
-    }
-
-    const allowedHosts = ['github.com', 'raw.githubusercontent.com'];
-    if (parsedUrl.protocol !== 'https:' || !allowedHosts.includes(parsedUrl.hostname)) {
-      sendResponse({
-        success: false,
-        status: 0,
-        html: '',
-        error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
-      });
-      return true;
-    }
-
-    // Create AbortController for this request
-    const controller = new AbortController();
-    if (requestId) {
-      pendingRequests.set(requestId, controller);
-    }
-
-    fetch(url, { credentials: 'include', signal: controller.signal })
-      .then(async (response) => {
-        const html = await response.text();
-        sendResponse({
-          success: response.ok,
-          status: response.status,
-          html,
-        });
-      })
-      .catch((error: Error) => {
-        if (error.name === 'AbortError') {
-          sendResponse({
-            success: false,
-            status: 0,
-            html: '',
-            error: 'Request aborted',
-          });
-        } else {
-          console.error('repo2txt: Failed to fetch GitHub page:', error);
-          sendResponse({
-            success: false,
-            status: 0,
-            html: '',
-            error: error.message,
-          });
-        }
-      })
-      .finally(() => {
-        // Clean up the pending request
-        if (requestId) {
-          pendingRequests.delete(requestId);
-        }
-      });
-
+  // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
+  // Using URL parsing to prevent bypasses like github.com.evil.com or github.com@evil.com
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    sendResponse({
+      success: false,
+      status: 0,
+      html: '',
+      error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
+    });
     return true;
+  }
+
+  const allowedHosts = ['github.com', 'raw.githubusercontent.com'];
+  if (parsedUrl.protocol !== 'https:' || !allowedHosts.includes(parsedUrl.hostname)) {
+    sendResponse({
+      success: false,
+      status: 0,
+      html: '',
+      error: 'Invalid URL: must be a github.com or raw.githubusercontent.com URL',
+    });
+    return true;
+  }
+
+  logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url}`);
+
+  // Create AbortController for this request
+  const controller = new AbortController();
+  if (requestId) {
+    pendingRequests.set(requestId, controller);
+  }
+
+  fetch(url, { credentials: 'include', signal: controller.signal })
+    .then(async (response) => {
+      const html = await response.text();
+      logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → ${response.status} (${html.length} bytes)`);
+      sendResponse({
+        success: response.ok,
+        status: response.status,
+        html,
+      });
+    })
+    .catch((error: Error) => {
+      if (error.name === 'AbortError') {
+        logger.debug('repo2txt', `GITHUB_WEB_FETCH: ${url} → aborted`);
+        sendResponse({
+          success: false,
+          status: 0,
+          html: '',
+          error: 'Request aborted',
+        });
+      } else {
+        logger.error('repo2txt', 'Failed to fetch GitHub page:', error);
+        sendResponse({
+          success: false,
+          status: 0,
+          html: '',
+          error: error.message,
+        });
+      }
+    })
+    .finally(() => {
+      // Clean up the pending request
+      if (requestId) {
+        pendingRequests.delete(requestId);
+      }
+    });
+
+  return true;
   }
 
   // Handle ABORT_GITHUB_FETCH - cancel a pending request

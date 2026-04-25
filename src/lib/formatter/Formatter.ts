@@ -5,6 +5,7 @@
 
 import { encode } from 'gpt-tokenizer';
 import { getTokenizerWorker } from './TokenizerWorker';
+import { logger } from '@/lib/utils/logger';
 import type { TreeNode, FileContent, FormattedOutput } from '@/types';
 
 export class Formatter {
@@ -120,7 +121,7 @@ export class Formatter {
     try {
       return encode(text).length;
     } catch (error) {
-      console.error('Error counting tokens:', error);
+      logger.error('repo2txt', 'Error counting tokens:', error);
       return 0;
     }
   }

@@ -9,6 +9,7 @@ import { ProviderError, ErrorCode } from '@/lib/providers/types';
 import type { ParsedRepoInfo } from '@/lib/providers/types';
 import type { ProviderType, FileNode, FetchOptions, FileContent } from '@/types';
 import { useStore } from '@/store';
+import { logger } from '@/lib/utils/logger';
 
 interface GitHubReferences {
   branches: string[];
@@ -40,10 +41,6 @@ export class GitHubProvider extends BaseProvider {
    * Fetch a URL using the background script's session-authenticated fetch
    * This sends GITHUB_WEB_FETCH messages that use github.com web endpoints
    */
-  /**
-   * Fetch a URL using the background script's session-authenticated fetch
-   * This sends GITHUB_WEB_FETCH messages that use github.com web endpoints
-   */
   private async sessionFetch(url: string, signal?: AbortSignal): Promise<string> {
     let response: { success: boolean; status: number; html: string; error?: string } | undefined;
 
@@ -66,56 +63,61 @@ export class GitHubProvider extends BaseProvider {
       );
     }
 
-    if (!response) {
+  if (!response) {
+    throw new ProviderError(
+      'Extension context unavailable',
+      ErrorCode.PROVIDER_ERROR,
+      'Could not communicate with the extension background script. Please reload the extension popup and try again.'
+    );
+  }
+
+  // Check if aborted after the call
+  if (signal?.aborted) {
+    throw new Error('AbortError');
+  }
+
+  // Add diagnostic logging for successful responses
+  if (response.success) {
+    logger.debug('repo2txt', `sessionFetch: ${url} → ${response.status} (${response.html.length} bytes)`);
+  }
+
+  if (!response.success) {
+    if (response.status === 429) {
       throw new ProviderError(
-        'Extension context unavailable',
-        ErrorCode.PROVIDER_ERROR,
-        'Could not communicate with the extension background script. Please reload the extension popup and try again.'
+        'GitHub rate limit reached',
+        ErrorCode.RATE_LIMITED,
+        'GitHub rate limit reached while using session mode. Large repositories may require a Personal Access Token. Please wait a moment and try again.'
       );
     }
 
-    // Check if aborted after the call
-    if (signal?.aborted) {
-      throw new Error('AbortError');
+    if (response.status === 401) {
+      throw new ProviderError(
+        'GitHub authentication required',
+        ErrorCode.AUTH_REQUIRED,
+        'You need to be logged into GitHub in your browser to access this repository. Please log into GitHub and try again, or add a Personal Access Token.'
+      );
     }
 
-    if (!response.success) {
-      if (response.status === 429) {
-        throw new ProviderError(
-          'GitHub rate limit reached',
-          ErrorCode.RATE_LIMITED,
-          'GitHub rate limit reached while using session mode. Large repositories may require a Personal Access Token. Please wait a moment and try again.'
-        );
-      }
-
-      if (response.status === 401) {
-        throw new ProviderError(
-          'GitHub authentication required',
-          ErrorCode.AUTH_REQUIRED,
-          'You need to be logged into GitHub in your browser to access this repository. Please log into GitHub and try again, or add a Personal Access Token.'
-        );
-      }
-
-      if (response.status === 403) {
-        throw new ProviderError(
-          'GitHub access denied',
-          ErrorCode.AUTH_REQUIRED,
-          'Access to this repository was denied. Make sure you are logged into GitHub in your browser and have access to this repository, or add a Personal Access Token with repo scope.'
-        );
-      }
-
-      if (response.status === 404) {
-        throw new ProviderError(
-          'Repository not found',
-          ErrorCode.NOT_FOUND,
-          "Repository not found. It may be private and you don't have access, or the URL may be incorrect. Make sure you are logged into GitHub in your browser, or add a Personal Access Token."
-        );
-      }
-
-      throw new Error(`HTTP ${response.status}: ${response.error || 'Session fetch failed'}`);
+    if (response.status === 403) {
+      throw new ProviderError(
+        'GitHub access denied',
+        ErrorCode.AUTH_REQUIRED,
+        'Access to this repository was denied. Make sure you are logged into GitHub in your browser and have access to this repository, or add a Personal Access Token with repo scope.'
+      );
     }
 
-    return response.html;
+    if (response.status === 404) {
+      throw new ProviderError(
+        'Repository not found',
+        ErrorCode.NOT_FOUND,
+        "Repository not found. It may be private and you don't have access, or the URL may be incorrect. Make sure you are logged into GitHub in your browser, or add a Personal Access Token."
+      );
+    }
+
+    throw new Error(`HTTP ${response.status}: ${response.error || 'Session fetch failed'}`);
+  }
+
+  return response.html;
   }
 
   /**
@@ -280,13 +282,11 @@ export class GitHubProvider extends BaseProvider {
         }
       }
 
-      // Log when DOM fallback is used
-      if (files.length === 0) {
-        console.warn(
-          '[repo2txt] parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback'
-        );
-      }
+    // Log when DOM fallback is used
+    if (files.length === 0) {
+      logger.warn('repo2txt', 'parseRepoPage: embeddedData parsing found 0 files, trying DOM fallback');
     }
+  }
 
     // Extract default branch from branch selector button if not found
     if (defaultBranch === 'main') {
@@ -304,6 +304,7 @@ export class GitHubProvider extends BaseProvider {
       }
     }
 
+  logger.debug('repo2txt', `parseRepoPage: found ${files.length} files, defaultBranch=${defaultBranch}, currentBranch=${currentBranch ?? 'none'}`);
     return { files, defaultBranch, currentBranch };
   }
 
