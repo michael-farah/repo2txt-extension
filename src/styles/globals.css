@@ -60,22 +60,9 @@
   }
 
   body {
-<<<<<<< HEAD
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      'Helvetica Neue',
-      Arial,
-      sans-serif;
-=======
-    background-color: rgba(var(--surface), 1);
-    color: rgba(var(--content), 1);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
->>>>>>> feat/ui-overhaul
+  background-color: rgba(var(--surface), 1);
+  color: rgba(var(--content), 1);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     width: var(--popup-width);
     min-height: var(--popup-min-height);
     -webkit-font-smoothing: antialiased;
@@ -165,8 +152,6 @@
     opacity: 1;
   }
 }
-<<<<<<< HEAD
-=======
 
 @keyframes indeterminate {
   0% {
@@ -194,4 +179,3 @@
     box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
   }
 }
->>>>>>> feat/ui-overhaul
