@@ -615,3 +615,33 @@ describe('GitHub Content Script', () => {
     });
   });
 });
+
+  describe('detectPageType', () => {
+    let detectPageType: (pathname: string) => import('@/lib/types/pageType').PageType;
+
+    beforeEach(async () => {
+      mockStorageLocalGet.mockResolvedValue({});
+      const module = await import('../github');
+      detectPageType = module.detectPageType;
+    });
+
+    it('should return COMMIT for /owner/repo/commit/sha paths', () => {
+      expect(detectPageType('/owner/repo/commit/abc123def456')).toBe('COMMIT');
+    });
+
+    it('should return PULL for /owner/repo/pull/123 paths', () => {
+      expect(detectPageType('/owner/repo/pull/123')).toBe('PULL');
+    });
+
+    it('should return COMPARE for /owner/repo/compare/main...dev paths', () => {
+      expect(detectPageType('/owner/repo/compare/main...dev')).toBe('COMPARE');
+    });
+
+    it('should return REPO for /owner/repo paths', () => {
+      expect(detectPageType('/owner/repo')).toBe('REPO');
+    });
+
+    it('should return REPO for /owner/repo/tree/branch paths', () => {
+      expect(detectPageType('/owner/repo/tree/main')).toBe('REPO');
+    });
+  });

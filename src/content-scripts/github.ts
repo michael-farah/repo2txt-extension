@@ -1,3 +1,5 @@
+import { PageType } from '@/lib/types/pageType';
+
 interface GitHubRepoInfo {
   owner: string;
   repo: string;
@@ -5,6 +7,35 @@ interface GitHubRepoInfo {
   path?: string;
 }
 
+/**
+ * Detect the type of GitHub page from a pathname
+ * @param pathname - The URL pathname (e.g., /owner/repo/commit/sha)
+ * @returns The detected PageType
+ */
+export function detectPageType(pathname: string): PageType {
+  const pathParts = pathname.split('/').filter(Boolean);
+
+  // Minimum: /owner/repo
+  if (pathParts.length < 3) {
+    return PageType.REPO;
+  }
+
+  const segment = pathParts[2];
+
+  if (segment === 'commit') {
+    return PageType.COMMIT;
+  }
+
+  if (segment === 'pull') {
+    return PageType.PULL;
+  }
+
+  if (segment === 'compare') {
+    return PageType.COMPARE;
+  }
+
+  return PageType.REPO;
+}
 async function shouldShowGitHubButton(): Promise<boolean> {
   try {
     const result = await chrome.storage.local.get('repo2txt-content-settings');
