@@ -29,7 +29,8 @@
     "test:e2e:ui": "playwright test --ui",
     "ci": "bun run typecheck && bun run lint && bun run test:unit",
     "build:crx": "bun run build && bun run scripts/package-crx.ts",
-    "build:zip": "bun run build && cd dist && zip -r ../repo2txt-extension.zip ."
+    "build:zip": "bun run build && cd dist && zip -r ../repo2txt-extension.zip .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.18",
@@ -60,6 +61,8 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "happy-dom": "^20.6.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "msw": "^2.12.10",
     "playwright": "^1.59.1",
     "postcss": "^8.5.6",
