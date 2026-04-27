@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { getGitHubPageType } from '../pageDetection';
 
 // Mock chrome APIs before importing the module
 const mockSendMessage = vi.fn();
@@ -616,32 +617,27 @@ describe('GitHub Content Script', () => {
   });
 });
 
-  describe('detectPageType', () => {
-    let detectPageType: (pathname: string) => import('@/lib/types/pageType').PageType;
-
-    beforeEach(async () => {
-      mockStorageLocalGet.mockResolvedValue({});
-      const module = await import('../github');
-      detectPageType = module.detectPageType;
-    });
-
-    it('should return COMMIT for /owner/repo/commit/sha paths', () => {
-      expect(detectPageType('/owner/repo/commit/abc123def456')).toBe('COMMIT');
-    });
-
-    it('should return PULL for /owner/repo/pull/123 paths', () => {
-      expect(detectPageType('/owner/repo/pull/123')).toBe('PULL');
-    });
-
-    it('should return COMPARE for /owner/repo/compare/main...dev paths', () => {
-      expect(detectPageType('/owner/repo/compare/main...dev')).toBe('COMPARE');
-    });
-
-    it('should return REPO for /owner/repo paths', () => {
-      expect(detectPageType('/owner/repo')).toBe('REPO');
-    });
-
-    it('should return REPO for /owner/repo/tree/branch paths', () => {
-      expect(detectPageType('/owner/repo/tree/main')).toBe('REPO');
-    });
+  describe('pageDetection module', () => {
+  it('should detect commit pages', () => {
+    expect(getGitHubPageType('/owner/repo/commit/abc123def456')).toBe('commit');
   });
+
+  it('should detect pull request pages', () => {
+    expect(getGitHubPageType('/owner/repo/pull/123')).toBe('pull');
+  });
+
+  it('should detect compare pages', () => {
+    expect(getGitHubPageType('/owner/repo/compare/main...dev')).toBe('compare');
+  });
+
+  it('should detect repo pages', () => {
+    expect(getGitHubPageType('/owner/repo')).toBe('repo');
+    expect(getGitHubPageType('/owner/repo/tree/main')).toBe('repo');
+  });
+
+  it('should return null for non-repo pages', () => {
+    expect(getGitHubPageType('/')).toBeNull();
+    expect(getGitHubPageType('/owner/repo/issues')).toBeNull();
+    expect(getGitHubPageType('/owner/repo/settings')).toBeNull();
+  });
+});
