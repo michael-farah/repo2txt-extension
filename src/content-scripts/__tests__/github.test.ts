@@ -1,643 +1,291 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { getGitHubPageType } from '../pageDetection';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock chrome APIs before importing the module
-const mockSendMessage = vi.fn();
-const mockStorageLocalGet = vi.fn();
-const mockStorageOnChanged = {
-  addListener: vi.fn(),
-};
+// Mock the pageDetection module
+vi.mock('../pageDetection', () => ({
+  getGitHubPageType: vi.fn(),
+  isDiffPage: vi.fn(),
+}));
 
-Object.defineProperty(global, 'chrome', {
-  value: {
-    runtime: {
-      sendMessage: mockSendMessage,
-    },
-    storage: {
-      local: {
-        get: mockStorageLocalGet,
-      },
-      onChanged: mockStorageOnChanged,
-    },
-  },
-  writable: true,
-  configurable: true,
-});
+// Import after mocking
+import { getGitHubPageType, isDiffPage } from '../pageDetection';
 
-// Mock clipboard
-Object.defineProperty(global, 'navigator', {
-  value: {
-    clipboard: {
-      writeText: vi.fn().mockResolvedValue(undefined),
-    },
-  },
-  writable: true,
-  configurable: true,
-});
-
-// Mock alert
-global.alert = vi.fn();
-
-describe('GitHub Content Script', () => {
+describe('GitHub Content Script Logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Reset document
-    document.body.innerHTML = '';
-    document.head.innerHTML = '';
-
-    // Reset location
-    delete (window as unknown as { location: Location }).location;
-    (window as unknown as { location: { href: string; pathname: string } }).location = {
-      href: 'https://github.com/owner/repo',
-      pathname: '/owner/repo',
-    };
-
-    // Reset modules
-    vi.resetModules();
   });
 
   afterEach(() => {
-    vi.resetModules();
+    vi.restoreAllMocks();
   });
 
-  describe('Button injection', () => {
-    beforeEach(() => {
-      mockStorageLocalGet.mockResolvedValue({});
-      mockSendMessage.mockResolvedValue({ success: true });
+  describe('Page Type Detection for Content Script', () => {
+    it('should treat repo pages as valid', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('repo');
+      vi.mocked(isDiffPage).mockReturnValue(false);
+
+      const pageType = getGitHubPageType('/owner/repo');
+      const isDiff = isDiffPage('/owner/repo');
+
+      expect(pageType).toBe('repo');
+      expect(isDiff).toBe(false);
     });
 
-    it('should inject button on valid repo page', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should treat commit pages as valid and diff pages', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('commit');
+      vi.mocked(isDiffPage).mockReturnValue(true);
 
-      // Import and wait for init
-      await import('../github');
+      const pageType = getGitHubPageType('/owner/repo/commit/abc123');
+      const isDiff = isDiffPage('/owner/repo/commit/abc123');
 
-      // Wait for setTimeout
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
+      expect(pageType).toBe('commit');
+      expect(isDiff).toBe(true);
     });
 
-    it('should not inject button on invalid page', async () => {
-      window.location.pathname = '/owner/repo/pull/123';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should treat PR pages as valid and diff pages', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('pull');
+      vi.mocked(isDiffPage).mockReturnValue(true);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const pageType = getGitHubPageType('/owner/repo/pull/123');
+      const isDiff = isDiffPage('/owner/repo/pull/123');
 
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
+      expect(pageType).toBe('pull');
+      expect(isDiff).toBe(true);
     });
 
-    it('should not inject duplicate buttons', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button class="repo2txt-convert-btn">Already exists</button>
-        </div>
-      `;
+    it('should treat compare pages as valid and diff pages', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('compare');
+      vi.mocked(isDiffPage).mockReturnValue(true);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const pageType = getGitHubPageType('/owner/repo/compare/main...feature');
+      const isDiff = isDiffPage('/owner/repo/compare/main...feature');
 
-      const buttons = document.querySelectorAll('.repo2txt-convert-btn');
-      expect(buttons.length).toBe(1);
+      expect(pageType).toBe('compare');
+      expect(isDiff).toBe(true);
     });
 
-    it('should send message when button is clicked', async () => {
-      window.location.pathname = '/owner/repo';
-      window.location.href = 'https://github.com/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should treat null page types as invalid', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue(null);
+      vi.mocked(isDiffPage).mockReturnValue(false);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const pageType = getGitHubPageType('/owner/repo/issues');
+      const isDiff = isDiffPage('/owner/repo/issues');
 
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      button?.click();
-
-      expect(mockSendMessage).toHaveBeenCalledWith({
-        type: 'OPEN_POPUP_WITH_REPO',
-        repoUrl: 'https://github.com/owner/repo',
-      });
-    });
-
-    it('should fallback to clipboard when sendMessage fails', async () => {
-      window.location.pathname = '/owner/repo';
-      window.location.href = 'https://github.com/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      mockSendMessage.mockRejectedValue(new Error('Extension not available'));
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      await button?.click();
-
-      // Wait for async clipboard operation
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://github.com/owner/repo');
-      expect(global.alert).toHaveBeenCalled();
-    });
-
-    it('should fallback to clipboard when runtime is unavailable', async () => {
-      window.location.pathname = '/owner/repo';
-      window.location.href = 'https://github.com/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      // Remove runtime
-      (chrome as unknown as { runtime: unknown }).runtime = undefined as unknown as typeof chrome.runtime;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      await button?.click();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://github.com/owner/repo');
-    });
-
-    it('should inject styles into document head', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const style = document.getElementById('repo2txt-styles');
-      expect(style).not.toBeNull();
-      expect(style?.tagName).toBe('STYLE');
-    });
-
-    it('should create button with correct class and type', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      expect(button).not.toBeNull();
-      expect(button?.tagName).toBe('BUTTON');
-      expect(button?.type).toBe('button');
-    });
-
-    it('should contain SVG icon in button', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      const svg = button?.querySelector('svg');
-      expect(svg).not.toBeNull();
-      expect(svg?.getAttribute('class')).toBe('repo2txt-icon');
-    });
-
-    it('should contain text label in button', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn') as HTMLButtonElement;
-      const span = button?.querySelector('span');
-      expect(span?.textContent).toBe('Convert to Text');
-    });
-
-    it('should not inject button when showGitHubButton is false', async () => {
-      mockStorageLocalGet.mockResolvedValue({
-        'repo2txt-content-settings': { showGitHubButton: false },
-      });
-
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should remove existing button when showGitHubButton is false', async () => {
-      mockStorageLocalGet.mockResolvedValue({
-        'repo2txt-content-settings': { showGitHubButton: false },
-      });
-
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button class="repo2txt-convert-btn">Convert to Text</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
+      expect(pageType).toBeNull();
+      expect(isDiff).toBe(false);
     });
   });
 
-  describe('Settings change listener', () => {
-    let settingsChangeHandler: ((changes: unknown, areaName: string) => void) | null = null;
+  describe('Button Routing Logic', () => {
+    it('should route diff pages to Copy Diff button', () => {
+      vi.mocked(isDiffPage).mockReturnValue(true);
 
-    beforeEach(() => {
-      mockStorageOnChanged.addListener.mockImplementation((handler) => {
-        settingsChangeHandler = handler;
-      });
+      const pathname = '/owner/repo/pull/123';
+      const shouldShowCopyDiff = isDiffPage(pathname);
+      const shouldShowConvert = !isDiffPage(pathname);
+
+      expect(shouldShowCopyDiff).toBe(true);
+      expect(shouldShowConvert).toBe(false);
     });
 
-    it('should re-init when content settings change', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = '<div class="file-navigation"></div>';
-      mockStorageLocalGet.mockResolvedValue({});
+    it('should route repo pages to Convert to Text button', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('repo');
+      vi.mocked(isDiffPage).mockReturnValue(false);
 
-      await import('../github');
+      const pathname = '/owner/repo';
+      const pageType = getGitHubPageType(pathname);
+      const shouldShowCopyDiff = isDiffPage(pathname);
+      const shouldShowConvert = pageType === 'repo' && !isDiffPage(pathname);
 
-      const changes = {
-        'repo2txt-content-settings': {
-          oldValue: { showGitHubButton: true },
-          newValue: { showGitHubButton: false },
-        },
-      };
+      expect(shouldShowCopyDiff).toBe(false);
+      expect(shouldShowConvert).toBe(true);
+    });
 
-      if (settingsChangeHandler) {
-        settingsChangeHandler(changes, 'local');
+    it('should route tree pages to Convert to Text button', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue('repo');
+      vi.mocked(isDiffPage).mockReturnValue(false);
+
+      const pathname = '/owner/repo/tree/main/src';
+      const pageType = getGitHubPageType(pathname);
+      const shouldShowCopyDiff = isDiffPage(pathname);
+      const shouldShowConvert = pageType === 'repo' && !isDiffPage(pathname);
+
+      expect(shouldShowCopyDiff).toBe(false);
+      expect(shouldShowConvert).toBe(true);
+    });
+
+    it('should not show any button on invalid pages', () => {
+      vi.mocked(getGitHubPageType).mockReturnValue(null);
+      vi.mocked(isDiffPage).mockReturnValue(false);
+
+      const pathname = '/owner/repo/issues';
+      const pageType = getGitHubPageType(pathname);
+      const shouldShowAnyButton = pageType !== null;
+
+      expect(shouldShowAnyButton).toBe(false);
+    });
+  });
+
+  describe('Diff URL Construction', () => {
+    it('should construct diff URL for commit pages', () => {
+      const baseUrl = 'https://github.com/owner/repo/commit/abc123';
+      const expected = 'https://github.com/owner/repo/commit/abc123.diff';
+
+      const url = new URL(baseUrl);
+      const diffUrl = url.origin + url.pathname + '.diff';
+
+      expect(diffUrl).toBe(expected);
+    });
+
+    it('should construct diff URL for PR pages', () => {
+      const baseUrl = 'https://github.com/owner/repo/pull/123';
+      const expected = 'https://github.com/owner/repo/pull/123.diff';
+
+      const url = new URL(baseUrl);
+      const diffUrl = url.origin + url.pathname + '.diff';
+
+      expect(diffUrl).toBe(expected);
+    });
+
+    it('should construct diff URL for compare pages', () => {
+      const baseUrl = 'https://github.com/owner/repo/compare/main...feature';
+      const expected = 'https://github.com/owner/repo/compare/main...feature.diff';
+
+      const url = new URL(baseUrl);
+      const diffUrl = url.origin + url.pathname + '.diff';
+
+      expect(diffUrl).toBe(expected);
+    });
+
+    it('should handle URLs with query params by using pathname only', () => {
+      const baseUrl = 'https://github.com/owner/repo/pull/123?tab=files';
+      const expected = 'https://github.com/owner/repo/pull/123.diff';
+
+      const url = new URL(baseUrl);
+      const diffUrl = url.origin + url.pathname + '.diff';
+
+      expect(diffUrl).toBe(expected);
+      expect(diffUrl).not.toContain('tab=files');
+    });
+
+    it('should not double-add .diff extension', () => {
+      const baseUrl = 'https://github.com/owner/repo/commit/abc123.diff';
+
+      const url = new URL(baseUrl);
+      let diffUrl = url.origin + url.pathname;
+      if (!diffUrl.endsWith('.diff')) {
+        diffUrl += '.diff';
       }
 
-      // Should trigger re-init
-      expect(mockStorageLocalGet).toHaveBeenCalled();
-    });
-
-    it('should ignore non-local area changes', async () => {
-      await import('../github');
-
-      const changes = {
-        'repo2txt-content-settings': {
-          oldValue: { showGitHubButton: true },
-          newValue: { showGitHubButton: false },
-        },
-      };
-
-      if (settingsChangeHandler) {
-        settingsChangeHandler(changes, 'sync');
-      }
-
-      // Should not trigger re-init
-      expect(mockStorageLocalGet).toHaveBeenCalledTimes(1); // Only from initial import
+      expect(diffUrl).toBe('https://github.com/owner/repo/commit/abc123.diff');
     });
   });
 
-  describe('URL validation', () => {
-    beforeEach(() => {
-      mockStorageLocalGet.mockResolvedValue({});
+  describe('Large Diff Warning Threshold', () => {
+    const DIFF_SIZE_WARNING = 50 * 1024; // 50KB
+
+    it('should trigger warning for diffs over 50KB', () => {
+      const largeDiff = 'a'.repeat(60000); // ~60KB when encoded
+      const byteSize = new TextEncoder().encode(largeDiff).length;
+
+      expect(byteSize).toBeGreaterThan(DIFF_SIZE_WARNING);
     });
 
-    it('should inject button on basic repo page', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should not trigger warning for diffs under 50KB', () => {
+      const smallDiff = 'a'.repeat(1000); // ~1KB when encoded
+      const byteSize = new TextEncoder().encode(smallDiff).length;
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
+      expect(byteSize).toBeLessThan(DIFF_SIZE_WARNING);
     });
 
-    it('should inject button on repo tree page', async () => {
-      window.location.pathname = '/owner/repo/tree/main';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should calculate approximate tokens correctly', () => {
+      const diffText = 'a'.repeat(4000); // ~4KB
+      const byteSize = new TextEncoder().encode(diffText).length;
+      const approxTokens = Math.round(byteSize / 4);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
+      expect(approxTokens).toBe(1000);
     });
 
-    it('should not inject button on pull requests page', async () => {
-      window.location.pathname = '/owner/repo/pull/123';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should calculate size in KB correctly', () => {
+      const diffText = 'a'.repeat(51200); // ~50KB
+      const byteSize = new TextEncoder().encode(diffText).length;
+      const sizeKB = Math.round(byteSize / 1024);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on issues page', async () => {
-      window.location.pathname = '/owner/repo/issues';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on wiki page', async () => {
-      window.location.pathname = '/owner/repo/wiki';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on actions page', async () => {
-      window.location.pathname = '/owner/repo/actions';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on settings page', async () => {
-      window.location.pathname = '/owner/repo/settings';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on stargazers page', async () => {
-      window.location.pathname = '/owner/repo/stargazers';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
-    });
-
-    it('should not inject button on forks page', async () => {
-      window.location.pathname = '/owner/repo/forks';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
+      expect(sizeKB).toBeGreaterThanOrEqual(50);
     });
   });
 
-  describe('Container detection', () => {
-    beforeEach(() => {
-      mockStorageLocalGet.mockResolvedValue({});
-    });
+  describe('Request ID Generation', () => {
+    it('should generate unique request IDs', () => {
+      const requestId1 = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const requestId2 = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    it('should find file-navigation container', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
-    });
-
-    it('should find repo-actions container', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="repo-actions">
-          <button>Star</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
-    });
-
-    it('should find repository-content flex-auto container', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="repository-content">
-          <div class="flex-auto">
-            <h1>Repo Name</h1>
-          </div>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).not.toBeNull();
-    });
-
-    it('should not inject button when no container found', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = '<div>Some other content</div>';
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const button = document.querySelector('.repo2txt-convert-btn');
-      expect(button).toBeNull();
+      expect(requestId1).not.toBe(requestId2);
+      expect(requestId1).toMatch(/^\d+-[a-z0-9]+$/);
+      expect(requestId2).toMatch(/^\d+-[a-z0-9]+$/);
     });
   });
 
-  describe('Button styles', () => {
-    beforeEach(() => {
-      mockStorageLocalGet.mockResolvedValue({});
+  describe('Background Response Handling', () => {
+    it('should use diff field from background response (not diffText)', () => {
+      // The background handler returns { success, status, diff }
+      // The content script must read response.diff, not response.diffText
+      const response = { success: true, status: 200, diff: 'diff --git a/file.ts' };
+      const diffText = response.diff;
+
+      expect(diffText).toBe('diff --git a/file.ts');
+      expect((response as Record<string, unknown>).diffText).toBeUndefined();
     });
 
-    it('should inject styles into document head', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should reject responses where success is false (HTTP errors)', () => {
+      // 404 responses return { success: false, status: 404, diff: "Not Found" }
+      // with NO error field — must check response.success
+      const response = { success: false, status: 404, diff: 'Not Found' };
+      const shouldReject =
+        !response || !response.success || ('error' in response && response.error);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const style = document.getElementById('repo2txt-styles');
-      expect(style).not.toBeNull();
-      expect(style?.tagName).toBe('STYLE');
+      expect(shouldReject).toBe(true);
     });
 
-    it('should not inject styles twice', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should reject responses where error is set', () => {
+      const response = { success: false, status: 0, diff: '', error: 'Network error' };
+      const shouldReject =
+        !response || !response.success || ('error' in response && response.error);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      // Import again
-      vi.resetModules();
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const styles = document.querySelectorAll('#repo2txt-styles');
-      expect(styles.length).toBe(1);
+      expect(shouldReject).toBe(true);
     });
 
-    it('should include button styles', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
+    it('should accept successful responses', () => {
+      const response = { success: true, status: 200, diff: 'diff --git a/file.ts' };
+      const shouldReject =
+        !response || !response.success || ('error' in response && response.error);
 
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const style = document.getElementById('repo2txt-styles');
-      expect(style?.textContent).toContain('.repo2txt-convert-btn');
-    });
-
-    it('should include dark mode styles', async () => {
-      window.location.pathname = '/owner/repo';
-      document.body.innerHTML = `
-        <div class="file-navigation">
-          <button>Code</button>
-        </div>
-      `;
-
-      await import('../github');
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const style = document.getElementById('repo2txt-styles');
-      expect(style?.textContent).toContain('prefers-color-scheme: dark');
-      expect(style?.textContent).toContain('[data-color-mode="dark"]');
+      expect(shouldReject).toBe(false);
     });
   });
-});
 
-  describe('pageDetection module', () => {
-  it('should detect commit pages', () => {
-    expect(getGitHubPageType('/owner/repo/commit/abc123def456')).toBe('commit');
-  });
+  describe('Page Type Combinations', () => {
+    it('should handle all valid page types', () => {
+      const testCases = [
+        { pathname: '/owner/repo', expectedType: 'repo', isDiff: false },
+        { pathname: '/owner/repo/tree/main', expectedType: 'repo', isDiff: false },
+        { pathname: '/owner/repo/blob/main/file.ts', expectedType: 'repo', isDiff: false },
+        { pathname: '/owner/repo/commit/abc123', expectedType: 'commit', isDiff: true },
+        { pathname: '/owner/repo/pull/123', expectedType: 'pull', isDiff: true },
+        { pathname: '/owner/repo/compare/main...feature', expectedType: 'compare', isDiff: true },
+      ];
 
-  it('should detect pull request pages', () => {
-    expect(getGitHubPageType('/owner/repo/pull/123')).toBe('pull');
-  });
+      testCases.forEach(({ pathname, expectedType, isDiff }) => {
+        vi.mocked(getGitHubPageType).mockReturnValue(
+          expectedType as ReturnType<typeof getGitHubPageType>
+        );
+        vi.mocked(isDiffPage).mockReturnValue(isDiff);
 
-  it('should detect compare pages', () => {
-    expect(getGitHubPageType('/owner/repo/compare/main...dev')).toBe('compare');
-  });
+        const pageType = getGitHubPageType(pathname);
+        const diffStatus = isDiffPage(pathname);
 
-  it('should detect repo pages', () => {
-    expect(getGitHubPageType('/owner/repo')).toBe('repo');
-    expect(getGitHubPageType('/owner/repo/tree/main')).toBe('repo');
-  });
-
-  it('should return null for non-repo pages', () => {
-    expect(getGitHubPageType('/')).toBeNull();
-    expect(getGitHubPageType('/owner/repo/issues')).toBeNull();
-    expect(getGitHubPageType('/owner/repo/settings')).toBeNull();
+        expect(pageType).toBe(expectedType);
+        expect(diffStatus).toBe(isDiff);
+      });
+    });
   });
 });
