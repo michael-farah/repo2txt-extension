@@ -1,4 +1,4 @@
-import { PageType } from '@/lib/types/pageType';
+import { getGitHubPageType } from './pageDetection';
 
 interface GitHubRepoInfo {
   owner: string;
@@ -7,35 +7,6 @@ interface GitHubRepoInfo {
   path?: string;
 }
 
-/**
- * Detect the type of GitHub page from a pathname
- * @param pathname - The URL pathname (e.g., /owner/repo/commit/sha)
- * @returns The detected PageType
- */
-export function detectPageType(pathname: string): PageType {
-  const pathParts = pathname.split('/').filter(Boolean);
-
-  // Minimum: /owner/repo
-  if (pathParts.length < 3) {
-    return PageType.REPO;
-  }
-
-  const segment = pathParts[2];
-
-  if (segment === 'commit') {
-    return PageType.COMMIT;
-  }
-
-  if (segment === 'pull') {
-    return PageType.PULL;
-  }
-
-  if (segment === 'compare') {
-    return PageType.COMPARE;
-  }
-
-  return PageType.REPO;
-}
 async function shouldShowGitHubButton(): Promise<boolean> {
   try {
     const result = await chrome.storage.local.get('repo2txt-content-settings');
@@ -85,37 +56,9 @@ function extractRepoInfo(): GitHubRepoInfo | null {
  * Check if current page is a valid GitHub repository page
  */
 function isValidRepoPage(): boolean {
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-
-  // Must have at least owner/repo
-  if (pathParts.length < 2) {
-    return false;
-  }
-
-  // Skip non-repo pages
-  const skipPatterns = [
-    'pull',
-    'issues',
-    'wiki',
-    'actions',
-    'security',
-    'pulse',
-    'graphs',
-    'network',
-    'settings',
-    'projects',
-    'discussions',
-    'forks',
-    'stargazers',
-    'watchers',
-    'releases',
-  ];
-
-  if (pathParts.length >= 3 && skipPatterns.includes(pathParts[2])) {
-    return false;
-  }
-
-  return true;
+  const pageType = getGitHubPageType(window.location.pathname);
+  // Valid for repo pages (but not diff pages - those get the Copy Diff button later)
+  return pageType === 'repo';
 }
 
 /**
