@@ -30,21 +30,25 @@
     "https://github.com/*",
     "https://raw.githubusercontent.com/*"
   ],
-  "content_scripts": [
-    {
-      "matches": ["https://github.com/*/*"],
-      "exclude_matches": [
-        "https://github.com/*/*/pull/*",
-        "https://github.com/*/*/issues/*",
-        "https://github.com/*/*/wiki/*",
-        "https://github.com/*/*/actions/*",
-        "https://github.com/*/*/projects/*",
-        "https://github.com/*/*/security/*",
-        "https://github.com/*/*/pulse/*",
-        "https://github.com/*/*/settings/*"
-      ],
-      "js": ["content-scripts/github.js"]
-    }
+"content_scripts": [
+  {
+"matches": [
+"https://github.com/*/*",
+"https://github.com/*/*/commit/*",
+"https://github.com/*/*/pull/*",
+"https://github.com/*/*/compare/*"
+],
+"exclude_matches": [
+"https://github.com/*/*/issues/*",
+"https://github.com/*/*/wiki/*",
+"https://github.com/*/*/actions/*",
+"https://github.com/*/*/projects/*",
+"https://github.com/*/*/security/*",
+"https://github.com/*/*/pulse/*",
+"https://github.com/*/*/settings/*"
+],
+"js": ["content-scripts/github.js"]
+}
   ],
   "content_security_policy": {
   "extension_pages": "script-src 'self'; object-src 'self'"
