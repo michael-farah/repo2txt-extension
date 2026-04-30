@@ -19,6 +19,7 @@ export default defineConfig({
   },
   build: {
     target: 'chrome120',
+    chunkSizeWarningLimit: 2000,
     sourcemap: process.env.NODE_ENV !== 'production',
     rollupOptions: {
       input: {
@@ -40,7 +41,6 @@ export default defineConfig({
           react: ['react', 'react-dom'],
           zustand: ['zustand'],
           jszip: ['jszip'],
-          tokenizer: ['gpt-tokenizer'],
         },
       },
     },

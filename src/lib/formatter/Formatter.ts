@@ -3,7 +3,6 @@
  * Generates formatted text output with directory tree and file contents
  */
 
-import { encode } from 'gpt-tokenizer';
 import { getTokenizerWorker } from './TokenizerWorker';
 import { logger } from '@/lib/utils/logger';
 import type { TreeNode, FileContent, FormattedOutput } from '@/types';
@@ -22,7 +21,7 @@ export class Formatter {
     return {
       directoryTree,
       fileContents: fileContentsText,
-      tokenCount: this.countTokens(fullOutput),
+      tokenCount: 0, // Use formatAsync for accurate token counting
       lineCount: fullOutput.split('\n').length,
     };
   }
@@ -57,7 +56,7 @@ export class Formatter {
     const fullOutput = `${directoryTree}\n\n${fileContentsText}`;
 
     // Count tokens for directory tree (small, can be synchronous)
-    const treeTokens = this.countTokens(directoryTree);
+    const treeTokens = await this.countTokens(directoryTree);
 
     return {
       directoryTree,
@@ -117,8 +116,9 @@ export class Formatter {
   /**
    * Count tokens using GPT tokenizer
    */
-  private static countTokens(text: string): number {
+  private static async countTokens(text: string): Promise<number> {
     try {
+      const { encode } = await import('gpt-tokenizer');
       return encode(text).length;
     } catch (error) {
       logger.error('repo2txt', 'Error counting tokens:', error);
