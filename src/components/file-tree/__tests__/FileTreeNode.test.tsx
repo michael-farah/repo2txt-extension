@@ -119,7 +119,7 @@ describe('FileTreeNode', () => {
   it('should have proper accessibility labels', () => {
     render(<FileTreeNode node={mockFileNode} depth={0} />);
 
-    const checkbox = screen.getByLabelText('Select test.ts');
+    const checkbox = screen.getByLabelText('Select file test.ts');
     expect(checkbox).toBeInTheDocument();
   });
 });

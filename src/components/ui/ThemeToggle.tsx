@@ -20,7 +20,7 @@ export function ThemeToggle() {
         <svg
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="w-4 h-4 text-gray-600 dark:text-gray-400"
+          className="w-4 h-4 text-content-muted"
           data-testid="theme-icon"
         >
           <circle cx="10" cy="10" r="4" />
@@ -104,7 +104,7 @@ export function ThemeToggle() {
         <svg
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="w-4 h-4 text-gray-600 dark:text-gray-400"
+          className="w-4 h-4 text-content-muted"
           data-testid="theme-icon"
         >
           <path d="M14.5 12.5a6 6 0 0 1-7-7 6 6 0 1 0 7 7z" />
@@ -115,7 +115,7 @@ export function ThemeToggle() {
       <svg
         viewBox="0 0 20 20"
         fill="currentColor"
-        className="w-4 h-4 text-gray-600 dark:text-gray-400"
+        className="w-4 h-4 text-content-muted"
         data-testid="theme-icon"
       >
         <rect x="3" y="4" width="14" height="10" rx="1.5" />

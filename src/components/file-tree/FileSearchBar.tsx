@@ -45,7 +45,7 @@ export function FileSearchBar({
   const showShortcutHint = value.length === 0 && !focused;
 
   return (
-    <div className={cn('relative', className)}>
+    <div role="search" className={cn('relative', className)}>
       {/* Search icon */}
       <svg
         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-muted"
@@ -96,12 +96,7 @@ export function FileSearchBar({
           className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-4 w-4 rounded-sm text-content-muted hover:text-content focus:outline-none focus:text-content transition-colors"
           aria-label="Clear search"
         >
-          <svg
-            className="h-3 w-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

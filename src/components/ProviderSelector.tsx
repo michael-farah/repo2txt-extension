@@ -37,7 +37,12 @@ const TABS = [
     label: 'Local',
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+        />
       </svg>
     ),
     testId: 'provider-tab-local',
@@ -61,7 +66,11 @@ export function ProviderSelector({
 
   // Sliding pill indicator state
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [pillStyle, setPillStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number; ready: boolean }>({
+    left: 0,
+    width: 0,
+    ready: false,
+  });
 
   const updatePill = useCallback(() => {
     const activeEl = tabRefs.current[activeIndex];
@@ -73,6 +82,7 @@ export function ProviderSelector({
         setPillStyle({
           left: activeRect.left - parentRect.left,
           width: activeRect.width,
+          ready: true,
         });
       }
     }
@@ -101,7 +111,11 @@ export function ProviderSelector({
       <div className="relative flex rounded-lg bg-surface-sunken p-1">
         {/* Sliding pill indicator */}
         <div
-          className="absolute top-1 h-[calc(100%-8px)] rounded-md bg-surface shadow-raised transition-all duration-200 ease-out"
+          className={cn(
+            'absolute top-1 h-[calc(100%-8px)] rounded-md bg-surface shadow-raised transition-all duration-200 ease-out',
+            !pillStyle.ready && 'opacity-0',
+            pillStyle.ready && 'opacity-100'
+          )}
           style={{
             left: pillStyle.left,
             width: pillStyle.width,
@@ -111,16 +125,16 @@ export function ProviderSelector({
         {TABS.map((tab, index) => (
           <button
             key={tab.id}
-            ref={(el) => { tabRefs.current[index] = el; }}
+            ref={(el) => {
+              tabRefs.current[index] = el;
+            }}
             onClick={() => handleProviderChange(tab.id)}
             disabled={disabled}
             data-testid={tab.testId}
             className={cn(
               'relative z-10 flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors duration-150 min-h-[32px] touch-manipulation rounded-md',
-              activeProvider === tab.id
-                ? 'text-content'
-                : 'text-content-muted hover:text-content',
-              disabled && 'opacity-50 cursor-not-allowed',
+              activeProvider === tab.id ? 'text-content' : 'text-content-muted hover:text-content',
+              disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
             {tab.icon}

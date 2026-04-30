@@ -17,42 +17,41 @@ const variantStyles: Record<ButtonVariant, string> = {
     'hover:bg-primary-700 hover:shadow-md hover:-translate-y-px',
     'active:bg-primary-800 active:translate-y-0 active:shadow-sm',
     'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-    'dark:bg-primary-500 dark:hover:bg-primary-600 dark:active:bg-primary-700',
+    'dark:bg-primary-500 dark:hover:bg-primary-600 dark:active:bg-primary-700'
   ),
   secondary: cn(
     'bg-gray-200 text-gray-900 border border-gray-300 shadow-sm',
     'hover:bg-gray-300 hover:shadow-md hover:-translate-y-px',
     'active:translate-y-0 active:shadow-sm',
     'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-    'dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-600',
+    'dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-600'
   ),
   ghost: cn(
-    'text-gray-500',
-    'hover:bg-gray-200 hover:text-gray-900',
-    'active:bg-gray-300',
-    'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-    'dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:active:bg-gray-700',
+    'text-content-muted',
+    'hover:bg-surface-raised hover:text-content',
+    'active:bg-surface-sunken',
+    'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2'
   ),
   danger: cn(
     'bg-red-600 text-white shadow-sm',
     'hover:bg-red-700 hover:shadow-md hover:-translate-y-px',
     'active:bg-red-700 active:translate-y-0',
     'focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2',
-    'dark:bg-red-700 dark:hover:bg-red-800',
+    'dark:bg-red-700 dark:hover:bg-red-800'
   ),
   success: cn(
     'bg-green-600 text-white shadow-sm',
     'hover:bg-green-700 hover:shadow-md hover:-translate-y-px',
     'active:bg-green-700 active:translate-y-0',
     'focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
-    'dark:bg-green-700 dark:hover:bg-green-800',
+    'dark:bg-green-700 dark:hover:bg-green-800'
   ),
   outline: cn(
     'border border-primary-500 text-primary-600',
     'hover:bg-primary-50 hover:-translate-y-px',
     'active:bg-primary-100 active:translate-y-0',
     'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-    'dark:text-primary-400 dark:border-primary-400 dark:hover:bg-primary-950',
+    'dark:text-primary-400 dark:border-primary-400 dark:hover:bg-primary-950'
   ),
 };
 
@@ -63,7 +62,19 @@ const sizeStyles: Record<ButtonSize, string> = {
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading = false, icon, className, children, disabled, ...props }, ref) => {
+  (
+    {
+      variant = 'primary',
+      size = 'md',
+      loading = false,
+      icon,
+      className,
+      children,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
     const isDisabled = disabled || loading;
 
     return (
@@ -76,7 +87,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none',
           variantStyles[variant],
           sizeStyles[size],
-          className,
+          className
         )}
         disabled={isDisabled}
         {...props}
@@ -89,7 +100,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
             <path
               className="opacity-75"
               fill="currentColor"
@@ -102,7 +120,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {children && <span>{children}</span>}
       </button>
     );
-  },
+  }
 );
 
 Button.displayName = 'Button';

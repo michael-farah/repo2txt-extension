@@ -83,7 +83,7 @@ export function RecentRepos({ repos, onSelect, onRemove, currentUrl }: RecentRep
               }}
               className={cn(
                 'ml-0.5 -mr-1 p-0.5 rounded-full transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                'opacity-0 group-hover:opacity-100',
+                'opacity-40 group-hover:opacity-100',
                 isActive
                   ? 'text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-800'
                   : 'text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
