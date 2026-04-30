@@ -4,7 +4,6 @@ import {
   getExceededLimits,
   getTokenWarningLevel,
   formatTokenCount,
-  type ContextLimit,
 } from '../contextLimits';
 
 describe('CONTEXT_LIMITS', () => {
@@ -23,10 +22,13 @@ describe('CONTEXT_LIMITS', () => {
   });
 
   test('has correct token limits', () => {
-    const limits = CONTEXT_LIMITS.reduce((acc, curr) => {
-      acc[curr.model] = curr.tokens;
-      return acc;
-    }, {} as Record<string, number>);
+    const limits = CONTEXT_LIMITS.reduce(
+      (acc, curr) => {
+        acc[curr.model] = curr.tokens;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     expect(limits['GPT-4o']).toBe(128_000);
     expect(limits['GPT-4o mini']).toBe(128_000);

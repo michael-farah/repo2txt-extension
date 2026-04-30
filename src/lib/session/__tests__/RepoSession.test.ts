@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RepoSession } from '../RepoSession';
 import type { StoreAdapter } from '../RepoSession';
-import type { RepoSessionCallbacks, RepoSessionState } from '../RepoSession';
+import type { RepoSessionCallbacks } from '../RepoSession';
 import type {
   IProvider,
-  CacheAdapter,
-  ProviderError as ProviderErrorType,
+  _CacheAdapter,
+  ProviderError as _ProviderErrorType,
 } from '@/lib/providers/types';
-import type { FileNode, ProviderType, TreeNode } from '@/types';
+import type { FileNode } from '@/types';
 import type { RepoSnapshot } from '@/store/slices/cacheSlice';
 
 // Mock GitHubProvider with a proper class constructor
@@ -252,9 +252,9 @@ describe('RepoSession', () => {
   describe('cancelLoad', () => {
     it('should abort an in-progress load', async () => {
       const session = new RepoSession(callbacks, storeAdapter);
-      let resolveFetch!: (value: FileNode[]) => void;
-      const fetchPromise = new Promise<FileNode[]>((resolve) => {
-        resolveFetch = resolve;
+      let _resolveFetch!: (value: FileNode[]) => void;
+      new Promise<FileNode[]>((resolve) => {
+        _resolveFetch = resolve;
       });
 
       const provider = createMockProvider({

@@ -27,7 +27,7 @@ function App() {
     nodes,
     selectedPaths,
     excludedPaths,
-    expandedPaths,
+    _expandedPaths,
     extensions,
     gitignorePatterns,
     showExcludedFiles,
@@ -78,7 +78,7 @@ function App() {
   // Build tree from store's getTree method
   const tree = useMemo(() => {
     return getTree();
-  }, [nodes, selectedPaths, excludedPaths, expandedPaths, getTree]);
+  }, [getTree]);
 
   // Convert extensions map to array for ExtensionFilter component
   const extensionList: ExtensionFilterType[] = useMemo(() => {

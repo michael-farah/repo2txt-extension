@@ -6,7 +6,7 @@
 
 const IS_PRODUCTION = import.meta.env.PROD;
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type _LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 function sanitize(message: string): string {
   // Remove GitHub tokens from log messages
@@ -19,19 +19,19 @@ function sanitize(message: string): string {
 export const logger = {
   debug: (prefix: string, ...args: unknown[]) => {
     if (!IS_PRODUCTION) {
-      console.debug(`[${prefix}]`, ...args.map(a => typeof a === 'string' ? sanitize(a) : a));
+      console.debug(`[${prefix}]`, ...args.map((a) => (typeof a === 'string' ? sanitize(a) : a)));
     }
   },
 
   info: (prefix: string, ...args: unknown[]) => {
-    console.info(`[${prefix}]`, ...args.map(a => typeof a === 'string' ? sanitize(a) : a));
+    console.info(`[${prefix}]`, ...args.map((a) => (typeof a === 'string' ? sanitize(a) : a)));
   },
 
   warn: (prefix: string, ...args: unknown[]) => {
-    console.warn(`[${prefix}]`, ...args.map(a => typeof a === 'string' ? sanitize(a) : a));
+    console.warn(`[${prefix}]`, ...args.map((a) => (typeof a === 'string' ? sanitize(a) : a)));
   },
 
   error: (prefix: string, ...args: unknown[]) => {
-    console.error(`[${prefix}]`, ...args.map(a => typeof a === 'string' ? sanitize(a) : a));
+    console.error(`[${prefix}]`, ...args.map((a) => (typeof a === 'string' ? sanitize(a) : a)));
   },
 };

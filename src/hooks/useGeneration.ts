@@ -26,22 +26,26 @@ export function useGeneration(opts: UseGenerationOpts) {
 
   // Stable onError ref to avoid re-creating pipeline on callback identity changes
   const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  useEffect(() => {
+    onErrorRef.current = onError;
+  });
 
-  // Create a single GenerationPipeline instance
+  // Create a single GenerationPipeline instance (lazy init via useEffect to avoid render-time ref access)
   const pipelineRef = useRef<GenerationPipeline | null>(null);
-  if (pipelineRef.current === null) {
-    pipelineRef.current = new GenerationPipeline({
-      onStateChange: (state) => {
-        setOutput(state.output);
-        setIsGenerating(state.isGenerating);
-      },
-      onError: (error) => {
-        onErrorRef.current(error);
-      },
-    });
-  }
-  const pipeline = pipelineRef.current;
+  useEffect(() => {
+    if (pipelineRef.current === null) {
+      pipelineRef.current = new GenerationPipeline({
+        onStateChange: (state) => {
+          setOutput(state.output);
+          setIsGenerating(state.isGenerating);
+        },
+        onError: (error) => {
+          onErrorRef.current(error);
+        },
+      });
+    }
+  }, []);
+  const pipeline = pipelineRef.current!;
 
   const generateOutput = useCallback(async () => {
     if (!currentProvider) return;

@@ -6,7 +6,6 @@
 import type { ProcessingState } from '@/lib/chrome/ProcessingState';
 import { ChromeBridge } from '@/lib/chrome/ChromeBridge';
 import {
-  MessageTypes,
   isOpenPopupWithRepoRequest,
   isUpdateProcessingStatusRequest,
   isClearProcessingStateRequest,

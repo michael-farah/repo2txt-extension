@@ -17,6 +17,7 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) throw new Error('useToast must be used within ToastProvider');
@@ -28,16 +29,13 @@ let toastId = 0;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback(
-    (message: string, type: ToastType = 'info', duration = 4000) => {
-      const id = ++toastId;
-      setToasts((prev) => [...prev, { id, message, type, duration }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, duration);
-    },
-    [],
-  );
+  const addToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  }, []);
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -66,7 +64,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 toast.type === 'warning' &&
                   'bg-warning-50 text-warning-700 border-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:border-warning-800',
                 toast.type === 'info' &&
-                  'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-950 dark:text-primary-300 dark:border-primary-800',
+                  'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-950 dark:text-primary-300 dark:border-primary-800'
               )}
             >
               <ToastIcon type={toast.type} />
@@ -83,17 +81,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           ))}
         </div>,
-        document.body,
+        document.body
       )}
     </ToastContext.Provider>
   );
@@ -110,11 +104,7 @@ function ToastIcon({ type }: { type: ToastType }) {
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       );
     case 'error':
@@ -126,11 +116,7 @@ function ToastIcon({ type }: { type: ToastType }) {
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6 18L18 6M6 6l12 12"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       );
     case 'warning':

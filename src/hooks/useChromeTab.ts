@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { GitHubProvider } from '@/features/github';
 import { useStore } from '@/store';
 import { ChromeBridge } from '@/lib/chrome/ChromeBridge';
-import type { ProcessingState } from '@/lib/chrome/ProcessingState';
 export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void) {
   const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
   const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);

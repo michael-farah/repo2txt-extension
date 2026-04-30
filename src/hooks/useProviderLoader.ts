@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { RepoSession } from '@/lib/session';
 import type { StoreAdapter } from '@/lib/session';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
-import type { FileSystemDirectoryHandle, FileNode } from '@/types';
+import type { FileSystemDirectoryHandle } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
 
 interface UseProviderLoaderOpts {
@@ -56,29 +56,32 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
   // Stable ref for onOutputClear to avoid re-creating session
   const onOutputClearRef = useRef(onOutputClear);
-  onOutputClearRef.current = onOutputClear;
-
-  // Create a single RepoSession instance
+  useEffect(() => {
+    onOutputClearRef.current = onOutputClear;
+  });
+  // Create a single RepoSession instance (lazy init via useEffect to avoid render-time ref access)
   const sessionRef = useRef<RepoSession | null>(null);
-  if (sessionRef.current === null) {
-    sessionRef.current = new RepoSession(
-      {
-        onStateChange: (state) => {
-          setCurrentProvider(state.provider);
-          setRepoNameState(state.repoName);
-          setIsLoading(state.isLoading);
+  useEffect(() => {
+    if (sessionRef.current === null) {
+      sessionRef.current = new RepoSession(
+        {
+          onStateChange: (state) => {
+            setCurrentProvider(state.provider);
+            setRepoNameState(state.repoName);
+            setIsLoading(state.isLoading);
+          },
+          onError: (err) => {
+            setError(err);
+          },
+          onOutputClear: () => {
+            onOutputClearRef.current();
+          },
         },
-        onError: (err) => {
-          setError(err);
-        },
-        onOutputClear: () => {
-          onOutputClearRef.current();
-        },
-      },
-      createStoreAdapter()
-    );
-  }
-  const session = sessionRef.current;
+        createStoreAdapter()
+      );
+    }
+  }, []);
+  const session = sessionRef.current!;
 
   // Handle GitHub submission
   const handleGitHubSubmit = useCallback(
@@ -166,18 +169,21 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
     session.cancelLoad();
   }, [session]);
 
+  const loadFiles = useCallback(() => session.loadFiles(), [session]);
+  const snapshotCurrentState = useCallback(() => session.snapshotCurrentState(), [session]);
+
   return {
     currentProvider,
     repoName,
     error,
     isLoading,
     cancelLoad,
-    loadFiles: session.loadFiles.bind(session),
+    loadFiles,
     handleGitHubSubmit,
     handleLocalDirectorySubmit,
     handleLocalZipSubmit,
     switchToRepo,
-    snapshotCurrentState: session.snapshotCurrentState.bind(session),
+    snapshotCurrentState,
     setError,
     shouldAutoExpandRootRef,
     resetProviderState,

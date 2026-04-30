@@ -166,7 +166,7 @@ describe('GenerationPipeline', () => {
       abortError.name = 'AbortError';
 
       const provider = createMockProvider({
-        fetchMultiple: vi.fn().mockImplementation(function* () {
+        fetchMultiple: vi.fn().mockImplementation(() => {
           throw abortError;
         }),
       });
@@ -193,7 +193,7 @@ describe('GenerationPipeline', () => {
       );
 
       const provider = createMockProvider({
-        fetchMultiple: vi.fn().mockImplementation(function* () {
+        fetchMultiple: vi.fn().mockImplementation(() => {
           throw providerError;
         }),
       });
@@ -214,7 +214,7 @@ describe('GenerationPipeline', () => {
 
     it('should handle generic error with error message', async () => {
       const provider = createMockProvider({
-        fetchMultiple: vi.fn().mockImplementation(function* () {
+        fetchMultiple: vi.fn().mockImplementation(() => {
           throw new Error('Something went wrong');
         }),
       });
@@ -233,7 +233,7 @@ describe('GenerationPipeline', () => {
 
     it('should handle non-Error thrown values', async () => {
       const provider = createMockProvider({
-        fetchMultiple: vi.fn().mockImplementation(function* () {
+        fetchMultiple: vi.fn().mockImplementation(() => {
           throw 'string error';
         }),
       });
@@ -252,7 +252,7 @@ describe('GenerationPipeline', () => {
 
     it('should always clear isGenerating in finally block', async () => {
       const provider = createMockProvider({
-        fetchMultiple: vi.fn().mockImplementation(function* () {
+        fetchMultiple: vi.fn().mockImplementation(() => {
           throw new Error('fail');
         }),
       });

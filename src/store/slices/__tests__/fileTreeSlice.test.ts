@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { create } from 'zustand';
 import { createFileTreeSlice, type FileTreeSlice, CODE_EXTENSIONS } from '../fileTreeSlice';
-import type { FileNode, TreeNode } from '@/types';
+import type { FileNode } from '@/types';
 
 function createStore() {
   return create<FileTreeSlice>()(createFileTreeSlice);
@@ -214,20 +214,14 @@ describe('fileTreeSlice', () => {
 
     test('replaces existing nodes and extensions when called again', () => {
       // First set of nodes
-      store.getState().setNodes([
-        createFileNode('src/app.ts'),
-        createFileNode('assets/logo.png'),
-      ]);
+      store.getState().setNodes([createFileNode('src/app.ts'), createFileNode('assets/logo.png')]);
 
       let extensions = store.getState().extensions;
       expect(extensions.has('.ts')).toBe(true);
       expect(extensions.has('.png')).toBe(true);
 
       // Second set of nodes - should replace
-      store.getState().setNodes([
-        createFileNode('lib/main.py'),
-        createFileNode('docs/readme.md'),
-      ]);
+      store.getState().setNodes([createFileNode('lib/main.py'), createFileNode('docs/readme.md')]);
 
       extensions = store.getState().extensions;
       expect(extensions.has('.ts')).toBe(false);
@@ -262,10 +256,7 @@ describe('fileTreeSlice', () => {
 
   describe('toggleSelection', () => {
     test('can manually select binary files after setNodes', () => {
-      const nodes: FileNode[] = [
-        createFileNode('src/app.ts'),
-        createFileNode('assets/logo.png'),
-      ];
+      const nodes: FileNode[] = [createFileNode('src/app.ts'), createFileNode('assets/logo.png')];
 
       store.getState().setNodes(nodes);
 
@@ -309,10 +300,7 @@ describe('fileTreeSlice', () => {
     });
 
     test('deselectAll deselects all files', () => {
-      const nodes: FileNode[] = [
-        createFileNode('src/app.ts'),
-        createFileNode('src/utils.ts'),
-      ];
+      const nodes: FileNode[] = [createFileNode('src/app.ts'), createFileNode('src/utils.ts')];
 
       store.getState().setNodes(nodes);
       store.getState().deselectAll();
