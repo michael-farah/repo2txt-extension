@@ -1,10 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
-import { Formatter } from '@/lib/formatter';
-import { ProviderError } from '@/lib/providers/types';
-import { ChromeBridge } from '@/lib/chrome';
-import type { FileNode, FileContent, FormattedOutput, TreeNode } from '@/types';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { GenerationPipeline } from '@/lib/pipeline';
+import type { FileNode, FormattedOutput, TreeNode } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
-import { logger } from '@/lib/utils/logger';
 
 type SelectionState = 'checked' | 'unchecked' | 'indeterminate';
 
@@ -21,109 +18,46 @@ interface UseGenerationOpts {
 }
 
 export function useGeneration(opts: UseGenerationOpts) {
-  const {
-    currentProvider,
-    getSelectedNodes,
-    nodes,
-    selectedPaths,
-    excludedPaths,
-    showExcluded,
-    getDirectorySelectionState,
-    getFullTree,
-    onError,
-  } = opts;
+  const { currentProvider, getSelectedNodes, getFullTree, onError } = opts;
 
   const [output, setOutput] = useState<FormattedOutput | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
 
+  // Stable onError ref to avoid re-creating pipeline on callback identity changes
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
+  // Create a single GenerationPipeline instance
+  const pipelineRef = useRef<GenerationPipeline | null>(null);
+  if (pipelineRef.current === null) {
+    pipelineRef.current = new GenerationPipeline({
+      onStateChange: (state) => {
+        setOutput(state.output);
+        setIsGenerating(state.isGenerating);
+      },
+      onError: (error) => {
+        onErrorRef.current(error);
+      },
+    });
+  }
+  const pipeline = pipelineRef.current;
+
   const generateOutput = useCallback(async () => {
     if (!currentProvider) return;
 
-    // Create an AbortController for the generation
-    const abortController = new AbortController();
+    const result = await pipeline.generate({
+      provider: currentProvider,
+      selectedNodes: getSelectedNodes(),
+      tree: getFullTree(),
+    });
 
-    try {
-      setIsGenerating(true);
-
-      const selectedNodes = getSelectedNodes();
-
-      if (selectedNodes.length === 0) {
-        onError({
-          message:
-            'No files selected.\n\nPlease select at least one file to generate output. You can:\n• Click the checkbox next to "File Tree" to select all files\n• Expand directories and select individual files\n• Use the Extension Filter to select files by type',
-        });
-        return;
-      }
-
-      ChromeBridge.updateProcessingStatus('generating');
-
-      // Fetch file contents with abort support
-      const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(
-        selectedNodes,
-        abortController.signal
-      )) {
-        fileContents.push(content);
-      }
-
-      // Get fully expanded tree for output (excluded filtered based on showExcluded)
-      const fullTree = getFullTree();
-
-      // Format output with full tree (using async Web Worker for better performance)
-      const formattedOutput = await Formatter.formatAsync(
-        fullTree,
-        fileContents,
-        (progress, current, total) => {
-          // Progress callback - could show progress UI here
-          logger.info(
-            'generation',
-            `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`
-          );
-        }
-      );
-
-      setOutput(formattedOutput);
-
+    if (result) {
       setTimeout(() => {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-    } catch (err) {
-      logger.error('generation', 'Failed to generate output:', err);
-
-      // Don't show error dialog for aborted requests
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-
-      if (err instanceof ProviderError) {
-        onError({
-          message: err.userMessage,
-          recovery: err.recovery,
-          recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-        });
-      } else {
-        onError({
-          message:
-            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
-        });
-      }
-    } finally {
-      setIsGenerating(false);
-
-      ChromeBridge.updateProcessingStatus('loaded');
     }
-  }, [
-    currentProvider,
-    getSelectedNodes,
-    nodes,
-    selectedPaths,
-    excludedPaths,
-    getDirectorySelectionState,
-    showExcluded,
-    getFullTree,
-    onError,
-  ]);
+  }, [currentProvider, getSelectedNodes, getFullTree, pipeline]);
 
   return { output, isGenerating, generateOutput, outputRef, setOutput };
 }

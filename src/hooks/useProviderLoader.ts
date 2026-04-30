@@ -1,298 +1,135 @@
 import { useState, useCallback, useRef } from 'react';
-import { GitHubProvider } from '@/features/github';
-import { ProviderError } from '@/lib/providers/types';
+import { RepoSession } from '@/lib/session';
+import type { StoreAdapter } from '@/lib/session';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
-import { useLoadQueue } from '@/hooks/useLoadQueue';
-import { ChromeBridge } from '@/lib/chrome';
-import type { FileSystemDirectoryHandle, ProviderType, FileNode } from '@/types';
-import type { IProvider, CacheAdapter } from '@/lib/providers/types';
-import type { RepoSnapshot } from '@/store/slices/cacheSlice';
+import type { FileSystemDirectoryHandle, FileNode } from '@/types';
+import type { IProvider } from '@/lib/providers/types';
 
 interface UseProviderLoaderOpts {
   onOutputClear: () => void;
 }
 
+/**
+ * Create a StoreAdapter that bridges RepoSession to the Zustand store.
+ * This keeps the store dependency in the hook layer, not in the domain class.
+ */
+function createStoreAdapter(): StoreAdapter {
+  const store = useStore.getState;
+  return {
+    getNodes: () => store().nodes,
+    getTree: () => store().tree,
+    getSelectedPaths: () => store().selectedPaths,
+    getExpandedPaths: () => store().expandedPaths,
+    getExcludedPaths: () => store().excludedPaths,
+    getExtensions: () => store().extensions,
+    getGitignorePatterns: () => store().gitignorePatterns,
+    getProviderType: () => store().providerType,
+    getRepoUrl: () => store().repoUrl,
+    getPat: () => store().pat,
+
+    setNodes: (nodes) => store().setNodes(nodes),
+    setTree: (tree) => store().setTree(tree),
+    setGitignorePatterns: (patterns) => store().setGitignorePatterns(patterns),
+    setProviderType: (type) => store().setProviderType(type),
+    setRepoUrl: (url) => store().setRepoUrl(url),
+    batchSetState: (state) => useStore.setState(state as Parameters<typeof useStore.setState>[0]),
+
+    snapshotRepoState: (url, snapshot) => store().snapshotRepoState(url, snapshot),
+    restoreRepoState: (url) => store().restoreRepoState(url),
+    addRecentRepo: (url, name) => store().addRecentRepo(url, name),
+  };
+}
+
 export function useProviderLoader(opts: UseProviderLoaderOpts) {
   const { onOutputClear } = opts;
-  const {
-    setProviderType,
-    setRepoUrl,
-    setNodes,
-    setTree,
-    setGitignorePatterns,
-    snapshotRepoState,
-    restoreRepoState,
-    addRecentRepo,
-    // Direct state setters for restore
-    selectedPaths,
-    expandedPaths,
-    excludedPaths,
-    extensions,
-    gitignorePatterns: currentGitignorePatterns,
-    nodes: currentNodes,
-    tree: currentTree,
-    providerType: currentProviderType,
-    repoUrl: currentRepoUrl,
-  } = useStore((state) => state);
 
   const [currentProvider, setCurrentProvider] = useState<IProvider | null>(null);
-  const [repoName, setRepoName] = useState<string>('repo-export');
+  const [repoName, setRepoNameState] = useState<string>('repo-export');
   const [error, setError] = useState<{
     message: string;
     recovery?: () => void;
     recoveryLabel?: string;
   } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const shouldAutoExpandRootRef = useRef(false);
 
-  const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
+  // Stable ref for onOutputClear to avoid re-creating session
+  const onOutputClearRef = useRef(onOutputClear);
+  onOutputClearRef.current = onOutputClear;
 
-  /** Create a CacheAdapter backed by the Zustand store */
-  const createStoreCacheAdapter = useCallback((): CacheAdapter => {
-    const { getCachedRepo, setCachedRepo } = useStore.getState();
-    return {
-      getCachedRepo: (key: string) => {
-        const cached = getCachedRepo(key);
-        return cached ? { data: cached.data } : null;
+  // Create a single RepoSession instance
+  const sessionRef = useRef<RepoSession | null>(null);
+  if (sessionRef.current === null) {
+    sessionRef.current = new RepoSession(
+      {
+        onStateChange: (state) => {
+          setCurrentProvider(state.provider);
+          setRepoNameState(state.repoName);
+          setIsLoading(state.isLoading);
+        },
+        onError: (err) => {
+          setError(err);
+        },
+        onOutputClear: () => {
+          onOutputClearRef.current();
+        },
       },
-      setCachedRepo: (key: string, data: FileNode[]) => {
-        setCachedRepo(key, data, []);
-      },
-    };
-  }, []);
-
-  /**
-   * Snapshot current repo state before switching to a new one.
-   * Saves selection, expansion, exclusion state to the cache.
-   */
-  const snapshotCurrentState = useCallback(() => {
-    if (!currentRepoUrl || currentNodes.length === 0) return;
-
-    const snapshot: RepoSnapshot = {
-      data: currentNodes,
-      fileTree: currentTree,
-      selectedPaths: Array.from(selectedPaths),
-      expandedPaths: Array.from(expandedPaths),
-      excludedPaths: Array.from(excludedPaths),
-      extensions: Array.from(extensions.entries()),
-      gitignorePatterns: currentGitignorePatterns,
-      providerType: currentProviderType,
-      repoUrl: currentRepoUrl,
-      repoName,
-    };
-
-    snapshotRepoState(currentRepoUrl, snapshot);
-  }, [
-    currentRepoUrl,
-    currentNodes,
-    currentTree,
-    selectedPaths,
-    expandedPaths,
-    excludedPaths,
-    extensions,
-    currentGitignorePatterns,
-    currentProviderType,
-    repoName,
-    snapshotRepoState,
-  ]);
-
-  /**
-   * Restore a previously cached repo state without re-fetching.
-   * Returns true if restore succeeded, false if no cached state.
-   */
-  const restoreCachedRepo = useCallback(
-    (url: string): boolean => {
-      const snapshot = restoreRepoState(url);
-      if (!snapshot) return false;
-
-      // Restore all state from snapshot
-      setNodes(snapshot.data);
-      setTree(snapshot.fileTree);
-      setGitignorePatterns(snapshot.gitignorePatterns);
-      setProviderType(snapshot.providerType);
-      setRepoUrl(snapshot.repoUrl);
-      setRepoName(snapshot.repoName);
-
-      // Set/restore the provider instance for file fetching
-      if (snapshot.providerType === 'github') {
-        const provider = new GitHubProvider();
-        const { pat } = useStore.getState();
-        if (pat) {
-          provider.setCredentials({ token: pat });
-        }
-        provider.setCacheAdapter(createStoreCacheAdapter());
-        setCurrentProvider(provider);
-      }
-      // Local providers can't be restored (directory handles are lost)
-      // The user would need to re-select the directory
-
-      // Restore selection/expansion/exclusion state via store batch update
-      useStore.setState({
-        selectedPaths: new Set(snapshot.selectedPaths),
-        expandedPaths: new Set(snapshot.expandedPaths),
-        excludedPaths: new Set(snapshot.excludedPaths),
-        extensions: new Map(snapshot.extensions),
-      });
-
-      // Add back to recent repos
-      addRecentRepo(url, snapshot.repoName);
-
-      return true;
-    },
-    [
-      restoreRepoState,
-      setNodes,
-      setTree,
-      setGitignorePatterns,
-      setProviderType,
-      setRepoUrl,
-      addRecentRepo,
-    ]
-  );
-
-  // Load files from provider
-  const loadFiles = useCallback(
-    async (provider: IProvider, url: string) => {
-      // Snapshot current state before loading new repo
-      snapshotCurrentState();
-
-      try {
-        setCurrentProvider(provider);
-        onOutputClear();
-
-        ChromeBridge.setProcessingState({ repoUrl: url, status: 'loading', timestamp: Date.now() });
-
-        // Check if we have a fresh cached version
-        const cached = restoreRepoState(url);
-        if (cached) {
-          // Use cached data — skip fetch
-          setNodes(cached.data);
-          setTree(cached.fileTree);
-          setGitignorePatterns(cached.gitignorePatterns);
-
-          useStore.setState({
-            selectedPaths: new Set(cached.selectedPaths),
-            expandedPaths: new Set(cached.expandedPaths),
-            excludedPaths: new Set(cached.excludedPaths),
-            extensions: new Map(cached.extensions),
-          });
-
-          ChromeBridge.setProcessingState({
-            repoUrl: url,
-            status: 'loaded',
-            timestamp: Date.now(),
-          });
-
-          addRecentRepo(url, repoName);
-          return;
-        }
-
-        const fetchedNodes = await startLoad(provider, url);
-
-        if (fetchedNodes === null) {
-          ChromeBridge.clearProcessingState();
-          return;
-        }
-
-        ChromeBridge.setProcessingState({ repoUrl: url, status: 'loaded', timestamp: Date.now() });
-
-        setNodes(fetchedNodes);
-        addRecentRepo(url, repoName);
-      } catch (err) {
-        console.error('Failed to load files:', err);
-
-        if (err instanceof Error && err.name === 'AbortError') {
-          ChromeBridge.clearProcessingState();
-          return;
-        }
-
-        ChromeBridge.clearProcessingState();
-
-        if (err instanceof ProviderError) {
-          setError({
-            message: err.userMessage,
-            recovery: err.recovery,
-            recoveryLabel: err.recovery ? 'Create GitHub Token' : undefined,
-          });
-        } else {
-          setError({
-            message: err instanceof Error ? err.message : 'Failed to load files. Please try again.',
-          });
-        }
-      }
-    },
-    [
-      setNodes,
-      startLoad,
-      onOutputClear,
-      snapshotCurrentState,
-      restoreRepoState,
-      addRecentRepo,
-      repoName,
-    ]
-  );
+      createStoreAdapter()
+    );
+  }
+  const session = sessionRef.current;
 
   // Handle GitHub submission
   const handleGitHubSubmit = useCallback(
     async (url: string) => {
-      setProviderType('github');
-      setRepoUrl(url);
-      setRepoName(extractGitHubRepoName(url));
+      useStore.getState().setProviderType('github');
+      useStore.getState().setRepoUrl(url);
+      const name = extractGitHubRepoName(url);
+      session.setRepoName(name);
+      setRepoNameState(name);
 
-      const provider = new GitHubProvider();
-      const { pat } = useStore.getState();
-      if (pat) {
-        provider.setCredentials({ token: pat });
-      }
-      provider.setCacheAdapter(createStoreCacheAdapter());
-
-      await loadFiles(provider, url);
+      const provider = session.createGitHubProvider(useStore.getState().pat);
+      await session.loadFiles(provider, url);
     },
-    [loadFiles, setProviderType, setRepoUrl]
+    [session]
   );
 
   // Handle local directory submission
   const handleLocalDirectorySubmit = useCallback(
     async (filesOrHandle: FileList | FileSystemDirectoryHandle) => {
-      setProviderType('local');
+      useStore.getState().setProviderType('local');
 
       const isHandle =
         filesOrHandle && 'values' in filesOrHandle && typeof filesOrHandle.values === 'function';
-      setRepoName(
-        isHandle
-          ? (filesOrHandle as FileSystemDirectoryHandle).name
-          : extractLocalName(filesOrHandle as FileList)
-      );
+      const name = isHandle
+        ? (filesOrHandle as FileSystemDirectoryHandle).name
+        : extractLocalName(filesOrHandle as FileList);
+      session.setRepoName(name);
+      setRepoNameState(name);
 
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-
-      if (isHandle) {
-        await provider.initialize({ source: 'directory', directoryHandle: filesOrHandle });
-      } else {
-        await provider.initialize({ source: 'directory', files: filesOrHandle as FileList });
-      }
+      const provider = await session.createLocalProvider('directory', filesOrHandle);
 
       shouldAutoExpandRootRef.current = true;
 
-      await loadFiles(provider, 'local://directory');
+      await session.loadFiles(provider, 'local://directory');
     },
-    [loadFiles, setProviderType]
+    [session]
   );
 
   // Handle local zip submission
   const handleLocalZipSubmit = useCallback(
     async (file: File) => {
-      setProviderType('local');
-      setRepoName(extractLocalName(file));
+      useStore.getState().setProviderType('local');
+      const name = extractLocalName(file);
+      session.setRepoName(name);
+      setRepoNameState(name);
 
-      const { LocalProvider } = await import('@/features/local');
-      const provider = new LocalProvider();
-      await provider.initialize({ source: 'zip', zipFile: file });
+      const provider = await session.createLocalProvider('zip', file);
 
-      await loadFiles(provider, 'local://zip');
+      await session.loadFiles(provider, 'local://zip');
     },
-    [loadFiles, setProviderType]
+    [session]
   );
 
   /**
@@ -302,10 +139,10 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
   const switchToRepo = useCallback(
     async (url: string) => {
       // Snapshot current before switching
-      snapshotCurrentState();
+      session.snapshotCurrentState();
 
       // Try cache restore (only works for GitHub repos with fresh cache)
-      const restored = restoreCachedRepo(url);
+      const restored = session.restoreCachedRepo(url);
       if (restored) return;
 
       // Fallback: re-fetch for GitHub URLs
@@ -314,18 +151,20 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
       }
       // Local repos can't be auto-restored
     },
-    [snapshotCurrentState, restoreCachedRepo, handleGitHubSubmit]
+    [session, handleGitHubSubmit]
   );
 
   // Reset provider state
   const resetProviderState = useCallback(() => {
-    setCurrentProvider(null);
+    session.reset();
     setError(null);
-    setNodes([]);
-    setTree([]);
-    setGitignorePatterns([]);
     onOutputClear();
-  }, [setNodes, setTree, setGitignorePatterns, onOutputClear]);
+  }, [session, onOutputClear]);
+
+  // Cancel load
+  const cancelLoad = useCallback(() => {
+    session.cancelLoad();
+  }, [session]);
 
   return {
     currentProvider,
@@ -333,12 +172,12 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
     error,
     isLoading,
     cancelLoad,
-    loadFiles,
+    loadFiles: session.loadFiles.bind(session),
     handleGitHubSubmit,
     handleLocalDirectorySubmit,
     handleLocalZipSubmit,
     switchToRepo,
-    snapshotCurrentState,
+    snapshotCurrentState: session.snapshotCurrentState.bind(session),
     setError,
     shouldAutoExpandRootRef,
     resetProviderState,
