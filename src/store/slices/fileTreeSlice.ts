@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { FileNode, TreeNode } from '@/types';
 import { type PatternResult, patternToRegex, getFileExtension } from '@/lib/utils/gitignore';
 import { shouldAutoExclude } from '@/lib/utils/binaryDetection';
+import { buildTree, extractDirectories } from '@/lib/tree-builder';
 
 // Common code file extensions that should be selected by default
 export const CODE_EXTENSIONS = [
@@ -39,6 +40,13 @@ export const CODE_EXTENSIONS = [
   '.svelte',
 ];
 
+export interface GetTreeOptions {
+  /** If true, all directories are expanded (for output generation). Default: false (use UI expansion state) */
+  fullyExpanded?: boolean;
+  /** If true, excluded paths are filtered out. Default: false (show excluded in UI) */
+  filterExcluded?: boolean;
+}
+
 export interface FileTreeSlice {
   nodes: FileNode[];
   tree: TreeNode[];
@@ -53,7 +61,7 @@ export interface FileTreeSlice {
   toggleSelection: (path: string) => void;
   selectNode: (path: string) => void;
   deselectNode: (path: string) => void;
-  toggleDirectory: (path: string) => void;
+  toggleDirectory: (dirPath: string) => void;
   toggleExtension: (extension: string) => void;
   toggleExpanded: (path: string) => void;
   setGitignorePatterns: (patterns: string[]) => void;
@@ -66,6 +74,7 @@ export interface FileTreeSlice {
   selectAll: () => void;
   deselectAll: () => void;
   reset: () => void;
+  getTree: (options?: GetTreeOptions) => TreeNode[];
 }
 
 const initialState = {
@@ -86,36 +95,36 @@ export const createFileTreeSlice: StateCreator<FileTreeSlice> = (set, get) => ({
     const extensionsMap = new Map<string, { count: number; selected: boolean }>();
     const NO_EXT_KEY = '(no extension)';
 
- nodes.forEach((node) => {
-   if (node.type === 'blob') {
-     if (shouldAutoExclude(node.path)) {
-       // Count binary files in extensions map but never auto-select them
-       const ext = getFileExtension(node.path) || NO_EXT_KEY;
-       const current = extensionsMap.get(ext) || { count: 0, selected: false };
-       extensionsMap.set(ext, { count: current.count + 1, selected: false });
-       return;
-     }
-     const ext = getFileExtension(node.path) || NO_EXT_KEY;
-     const current = extensionsMap.get(ext) || { count: 0, selected: false };
-     extensionsMap.set(ext, {
-       count: current.count + 1,
-       selected: current.selected || (ext === NO_EXT_KEY ? true : CODE_EXTENSIONS.includes(ext)),
-     });
-   }
+    nodes.forEach((node) => {
+      if (node.type === 'blob') {
+        if (shouldAutoExclude(node.path)) {
+          // Count binary files in extensions map but never auto-select them
+          const ext = getFileExtension(node.path) || NO_EXT_KEY;
+          const current = extensionsMap.get(ext) || { count: 0, selected: false };
+          extensionsMap.set(ext, { count: current.count + 1, selected: false });
+          return;
+        }
+        const ext = getFileExtension(node.path) || NO_EXT_KEY;
+        const current = extensionsMap.get(ext) || { count: 0, selected: false };
+        extensionsMap.set(ext, {
+          count: current.count + 1,
+          selected: current.selected || (ext === NO_EXT_KEY ? true : CODE_EXTENSIONS.includes(ext)),
+        });
+      }
     });
 
- // Auto-select files with code extensions and files without extensions
- // Skip binary and low-value files entirely
- const selectedPaths = new Set<string>();
- nodes.forEach((node) => {
-   if (node.type === 'blob') {
-     if (shouldAutoExclude(node.path)) return;
-     const ext = getFileExtension(node.path) || NO_EXT_KEY;
-     if (extensionsMap.get(ext)?.selected) {
-       selectedPaths.add(node.path);
-     }
-   }
- });
+    // Auto-select files with code extensions and files without extensions
+    // Skip binary and low-value files entirely
+    const selectedPaths = new Set<string>();
+    nodes.forEach((node) => {
+      if (node.type === 'blob') {
+        if (shouldAutoExclude(node.path)) return;
+        const ext = getFileExtension(node.path) || NO_EXT_KEY;
+        if (extensionsMap.get(ext)?.selected) {
+          selectedPaths.add(node.path);
+        }
+      }
+    });
 
     set({ nodes, extensions: extensionsMap, selectedPaths });
   },
@@ -387,5 +396,39 @@ export const createFileTreeSlice: StateCreator<FileTreeSlice> = (set, get) => ({
       extensions: new Map<string, { count: number; selected: boolean }>(),
       gitignorePatterns: [],
     }));
+  },
+
+  getTree: (options?: GetTreeOptions) => {
+    const { nodes, selectedPaths, excludedPaths, expandedPaths, getDirectorySelectionState } =
+      get();
+
+    if (nodes.length === 0) return [];
+
+    const existingPaths = new Set(nodes.map((n) => n.path));
+    const dirPaths = extractDirectories(nodes);
+
+    const newDirNodes = dirPaths
+      .filter((path) => !existingPaths.has(path))
+      .map((path) => ({
+        path,
+        type: 'tree' as const,
+      }));
+
+    let allNodes = [...nodes, ...newDirNodes];
+
+    if (options?.filterExcluded) {
+      allNodes = allNodes.filter((n) => !excludedPaths.has(n.path));
+    }
+
+    const expandedPathsForTree = options?.fullyExpanded
+      ? new Set(allNodes.filter((n) => n.type === 'tree').map((n) => n.path))
+      : expandedPaths;
+
+    return buildTree(allNodes, {
+      selectedPaths,
+      excludedPaths: options?.filterExcluded ? new Set() : excludedPaths,
+      expandedPaths: expandedPathsForTree,
+      getDirectorySelectionState,
+    });
   },
 });

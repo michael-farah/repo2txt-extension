@@ -3,28 +3,34 @@
  * Manages processing state and badge notifications
  */
 
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
+import type { ProcessingState } from '@/lib/chrome/ProcessingState';
+import { ChromeBridge } from '@/lib/chrome/ChromeBridge';
+import {
+  MessageTypes,
+  isOpenPopupWithRepoRequest,
+  isUpdateProcessingStatusRequest,
+  isClearProcessingStateRequest,
+  isGetProcessingStateRequest,
+  isGithubWebFetchRequest,
+  isAbortGithubFetchRequest,
+  isFetchDiffRequest,
+  isAbortFetchDiffRequest,
+} from '@/lib/chrome/messages';
 
 // Track pending requests for cancellation
 const pendingRequests = new Map<string, AbortController>();
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // Handle OPEN_POPUP_WITH_REPO - store processing state and set badge
-  if (message.type === 'OPEN_POPUP_WITH_REPO' && message.repoUrl) {
+  if (isOpenPopupWithRepoRequest(message) && message.repoUrl) {
     const processingState: ProcessingState = {
       repoUrl: message.repoUrl,
       status: 'loading',
       timestamp: Date.now(),
     };
 
-    chrome.storage.session
-      .set({ processingState })
+    ChromeBridge.setProcessingState(processingState)
       .then(() => {
-        chrome.action.setBadgeText({ text: '1' });
-        chrome.action.setBadgeBackgroundColor({ color: '#4F46E5' });
+        ChromeBridge.setBadge('1');
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
@@ -37,24 +43,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // Handle UPDATE_PROCESSING_STATUS - update the status field
-  if (message.type === 'UPDATE_PROCESSING_STATUS' && message.status) {
-    chrome.storage.session
-      .get('processingState')
-      .then((result) => {
-        const currentState = result.processingState as ProcessingState | undefined;
+  if (isUpdateProcessingStatusRequest(message) && message.status) {
+    ChromeBridge.getProcessingState()
+      .then((currentState) => {
         if (currentState) {
-          const updatedState: ProcessingState = {
+          return ChromeBridge.setProcessingState({
             ...currentState,
             status: message.status,
-          };
-          return chrome.storage.session.set({ processingState: updatedState });
+          });
         }
         return Promise.resolve();
       })
       .then(() => {
-        // Clear badge when status is 'loaded'
         if (message.status === 'loaded') {
-          chrome.action.setBadgeText({ text: '' });
+          ChromeBridge.clearBadge();
         }
         sendResponse({ success: true });
       })
@@ -67,11 +69,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // Handle CLEAR_PROCESSING_STATE - remove processing state and clear badge
-  if (message.type === 'CLEAR_PROCESSING_STATE') {
-    chrome.storage.session
-      .remove('processingState')
+  if (isClearProcessingStateRequest(message)) {
+    ChromeBridge.clearProcessingState()
       .then(() => {
-        chrome.action.setBadgeText({ text: '' });
+        ChromeBridge.clearBadge();
         sendResponse({ success: true });
       })
       .catch((error: Error) => {
@@ -83,13 +84,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // Handle GET_PROCESSING_STATE - return current processing state
-  if (message.type === 'GET_PROCESSING_STATE') {
-    chrome.storage.session
-      .get('processingState')
-      .then((result) => {
+  if (isGetProcessingStateRequest(message)) {
+    ChromeBridge.getProcessingState()
+      .then((state) => {
         sendResponse({
           success: true,
-          state: result.processingState as ProcessingState | undefined,
+          state: state ?? undefined,
         });
       })
       .catch((error: Error) => {
@@ -106,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
    * the extension has host_permissions for the target domain. This allows
    * fetching GitHub pages with the user's _gh_sess cookie included.
    */
-  if (message.type === 'GITHUB_WEB_FETCH' && message.url) {
+  if (isGithubWebFetchRequest(message) && message.url) {
     const { url, requestId } = message as { url: string; requestId?: string };
 
     // Security: validate URL targets github.com or raw.githubusercontent.com (prevent SSRF)
@@ -179,7 +179,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // Handle ABORT_GITHUB_FETCH - cancel a pending request
-  if (message.type === 'ABORT_GITHUB_FETCH' && message.requestId) {
+  if (isAbortGithubFetchRequest(message) && message.requestId) {
     const controller = pendingRequests.get(message.requestId);
     if (controller) {
       controller.abort();
@@ -195,7 +195,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
    * Handle FETCH_DIFF - fetch diff files from github.com
    * Similar to GITHUB_WEB_FETCH but returns diff field instead of html
    */
-  if (message.type === 'FETCH_DIFF' && message.url) {
+  if (isFetchDiffRequest(message) && message.url) {
     const { url, requestId } = message as { url: string; requestId?: string };
 
     // Security: validate URL targets github.com (prevent SSRF)
@@ -266,7 +266,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // Handle ABORT_FETCH_DIFF - cancel a pending diff request
-  if (message.type === 'ABORT_FETCH_DIFF' && message.requestId) {
+  if (isAbortFetchDiffRequest(message) && message.requestId) {
     const controller = pendingRequests.get(message.requestId);
     if (controller) {
       controller.abort();
@@ -287,34 +287,31 @@ chrome.storage.session.onChanged.addListener((changes) => {
 
   // Processing state removed — clear badge
   if (oldValue && !newValue) {
-    chrome.action.setBadgeText({ text: '' });
+    ChromeBridge.clearBadge();
     return;
   }
 
   // Processing state added — set badge
   if (newValue && !oldValue) {
-    chrome.action.setBadgeText({ text: '1' });
-    chrome.action.setBadgeBackgroundColor({ color: '#4F46E5' });
+    ChromeBridge.setBadge('1');
     return;
   }
 
   // Status updated — clear badge when loading is done
   const newState = newValue as ProcessingState | undefined;
   if (newState?.status === 'loaded') {
-    chrome.action.setBadgeText({ text: '' });
+    ChromeBridge.clearBadge();
   } else if (newState?.status === 'generating') {
-    chrome.action.setBadgeText({ text: '1' });
-    chrome.action.setBadgeBackgroundColor({ color: '#4F46E5' });
+    ChromeBridge.setBadge('1');
   }
 });
 
 // Keep the legacy pendingRepoUrl listener for backward compatibility
 chrome.storage.session.onChanged.addListener((changes) => {
   if (changes.pendingRepoUrl && changes.pendingRepoUrl.newValue === undefined) {
-    // Only clear badge if there's no processingState either
-    chrome.storage.session.get('processingState').then((result) => {
-      if (!result.processingState) {
-        chrome.action.setBadgeText({ text: '' });
+    ChromeBridge.getProcessingState().then((state) => {
+      if (!state) {
+        ChromeBridge.clearBadge();
       }
     });
   }

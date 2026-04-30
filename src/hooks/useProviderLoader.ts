@@ -4,10 +4,10 @@ import { ProviderError } from '@/lib/providers/types';
 import { extractGitHubRepoName, extractLocalName } from '@/lib/utils/repoName';
 import { useStore } from '@/store';
 import { useLoadQueue } from '@/hooks/useLoadQueue';
-import type { FileSystemDirectoryHandle, ProviderType } from '@/types';
-import type { IProvider } from '@/lib/providers/types';
+import { ChromeBridge } from '@/lib/chrome';
+import type { FileSystemDirectoryHandle, ProviderType, FileNode } from '@/types';
+import type { IProvider, CacheAdapter } from '@/lib/providers/types';
 import type { RepoSnapshot } from '@/store/slices/cacheSlice';
-
 
 interface UseProviderLoaderOpts {
   onOutputClear: () => void;
@@ -47,6 +47,20 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
   const { loading: isLoading, start: startLoad, cancel: cancelLoad } = useLoadQueue();
 
+  /** Create a CacheAdapter backed by the Zustand store */
+  const createStoreCacheAdapter = useCallback((): CacheAdapter => {
+    const { getCachedRepo, setCachedRepo } = useStore.getState();
+    return {
+      getCachedRepo: (key: string) => {
+        const cached = getCachedRepo(key);
+        return cached ? { data: cached.data } : null;
+      },
+      setCachedRepo: (key: string, data: FileNode[]) => {
+        setCachedRepo(key, data, []);
+      },
+    };
+  }, []);
+
   /**
    * Snapshot current repo state before switching to a new one.
    * Saves selection, expansion, exclusion state to the cache.
@@ -69,9 +83,17 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
     snapshotRepoState(currentRepoUrl, snapshot);
   }, [
-    currentRepoUrl, currentNodes, currentTree, selectedPaths,
-    expandedPaths, excludedPaths, extensions, currentGitignorePatterns,
-    currentProviderType, repoName, snapshotRepoState,
+    currentRepoUrl,
+    currentNodes,
+    currentTree,
+    selectedPaths,
+    expandedPaths,
+    excludedPaths,
+    extensions,
+    currentGitignorePatterns,
+    currentProviderType,
+    repoName,
+    snapshotRepoState,
   ]);
 
   /**
@@ -98,6 +120,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         if (pat) {
           provider.setCredentials({ token: pat });
         }
+        provider.setCacheAdapter(createStoreCacheAdapter());
         setCurrentProvider(provider);
       }
       // Local providers can't be restored (directory handles are lost)
@@ -116,7 +139,15 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
       return true;
     },
-    [restoreRepoState, setNodes, setTree, setGitignorePatterns, setProviderType, setRepoUrl, addRecentRepo],
+    [
+      restoreRepoState,
+      setNodes,
+      setTree,
+      setGitignorePatterns,
+      setProviderType,
+      setRepoUrl,
+      addRecentRepo,
+    ]
   );
 
   // Load files from provider
@@ -129,11 +160,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         setCurrentProvider(provider);
         onOutputClear();
 
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loading', timestamp: Date.now() },
-          });
-        }
+        ChromeBridge.setProcessingState({ repoUrl: url, status: 'loading', timestamp: Date.now() });
 
         // Check if we have a fresh cached version
         const cached = restoreRepoState(url);
@@ -150,11 +177,11 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
             extensions: new Map(cached.extensions),
           });
 
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.set({
-              processingState: { repoUrl: url, status: 'loaded', timestamp: Date.now() },
-            });
-          }
+          ChromeBridge.setProcessingState({
+            repoUrl: url,
+            status: 'loaded',
+            timestamp: Date.now(),
+          });
 
           addRecentRepo(url, repoName);
           return;
@@ -163,17 +190,11 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         const fetchedNodes = await startLoad(provider, url);
 
         if (fetchedNodes === null) {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
+          ChromeBridge.clearProcessingState();
           return;
         }
 
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.set({
-            processingState: { repoUrl: url, status: 'loaded', timestamp: Date.now() },
-          });
-        }
+        ChromeBridge.setProcessingState({ repoUrl: url, status: 'loaded', timestamp: Date.now() });
 
         setNodes(fetchedNodes);
         addRecentRepo(url, repoName);
@@ -181,15 +202,11 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         console.error('Failed to load files:', err);
 
         if (err instanceof Error && err.name === 'AbortError') {
-          if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-            chrome.storage.session.remove('processingState');
-          }
+          ChromeBridge.clearProcessingState();
           return;
         }
 
-        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-          chrome.storage.session.remove('processingState');
-        }
+        ChromeBridge.clearProcessingState();
 
         if (err instanceof ProviderError) {
           setError({
@@ -204,7 +221,15 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
         }
       }
     },
-    [setNodes, startLoad, onOutputClear, snapshotCurrentState, restoreRepoState, addRecentRepo, repoName],
+    [
+      setNodes,
+      startLoad,
+      onOutputClear,
+      snapshotCurrentState,
+      restoreRepoState,
+      addRecentRepo,
+      repoName,
+    ]
   );
 
   // Handle GitHub submission
@@ -219,10 +244,11 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
       if (pat) {
         provider.setCredentials({ token: pat });
       }
+      provider.setCacheAdapter(createStoreCacheAdapter());
 
       await loadFiles(provider, url);
     },
-    [loadFiles, setProviderType, setRepoUrl],
+    [loadFiles, setProviderType, setRepoUrl]
   );
 
   // Handle local directory submission
@@ -235,7 +261,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
       setRepoName(
         isHandle
           ? (filesOrHandle as FileSystemDirectoryHandle).name
-          : extractLocalName(filesOrHandle as FileList),
+          : extractLocalName(filesOrHandle as FileList)
       );
 
       const { LocalProvider } = await import('@/features/local');
@@ -251,7 +277,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
       await loadFiles(provider, 'local://directory');
     },
-    [loadFiles, setProviderType],
+    [loadFiles, setProviderType]
   );
 
   // Handle local zip submission
@@ -266,7 +292,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
 
       await loadFiles(provider, 'local://zip');
     },
-    [loadFiles, setProviderType],
+    [loadFiles, setProviderType]
   );
 
   /**
@@ -288,7 +314,7 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
       }
       // Local repos can't be auto-restored
     },
-    [snapshotCurrentState, restoreCachedRepo, handleGitHubSubmit],
+    [snapshotCurrentState, restoreCachedRepo, handleGitHubSubmit]
   );
 
   // Reset provider state

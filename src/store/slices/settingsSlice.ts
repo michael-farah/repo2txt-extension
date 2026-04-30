@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { ChromeBridge } from '@/lib/chrome/ChromeBridge';
 
 export interface SettingsSlice {
   showGitHubButton: boolean;
@@ -19,11 +20,6 @@ const initialState = {
   autoExpandDirectories: false,
 };
 
-/**
- * Sync settings to a separate, non-encrypted chrome.storage.local key
- * so content scripts (which run outside the React/Zustand context)
- * can read them without needing the encryption key.
- */
 function syncContentSettings(settings: {
   showGitHubButton: boolean;
   showTokenCount: boolean;
@@ -31,13 +27,7 @@ function syncContentSettings(settings: {
   autoExpandDirectories: boolean;
 }): void {
   try {
-    const isChromeExtension =
-      typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
-    if (isChromeExtension) {
-      chrome.storage.local.set({ 'repo2txt-content-settings': settings });
-    } else {
-      localStorage.setItem('repo2txt-content-settings', JSON.stringify(settings));
-    }
+    ChromeBridge.setLocalStorage('repo2txt-content-settings', settings);
   } catch {
     // Non-critical: content script will fall back to defaults
   }

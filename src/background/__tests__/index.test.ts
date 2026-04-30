@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { MessageTypes } from '@/lib/chrome/messages';
 
 // ---- Capture the message listener callback ----
 let messageListener:
@@ -89,7 +90,7 @@ describe('Background Script - FETCH_DIFF', () => {
     vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
     });
 
@@ -107,7 +108,7 @@ describe('Background Script - FETCH_DIFF', () => {
   // 2. FETCH_DIFF validates URL is github.com
   it('should reject non-github.com URLs', async () => {
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://gitlab.com/owner/repo/commit/abc123.diff',
     });
 
@@ -122,7 +123,7 @@ describe('Background Script - FETCH_DIFF', () => {
   // 3. FETCH_DIFF validates URL is https
   it('should reject http:// URLs', async () => {
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'http://github.com/owner/repo/commit/abc123.diff',
     });
 
@@ -137,7 +138,7 @@ describe('Background Script - FETCH_DIFF', () => {
   // 4. FETCH_DIFF handles malformed URL
   it('should handle malformed URLs', async () => {
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'not-a-valid-url',
     });
 
@@ -159,7 +160,7 @@ describe('Background Script - FETCH_DIFF', () => {
     vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/nonexistent.diff',
     });
 
@@ -180,7 +181,7 @@ describe('Background Script - FETCH_DIFF', () => {
     vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
     });
 
@@ -196,7 +197,7 @@ describe('Background Script - FETCH_DIFF', () => {
     vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
 
     const response = await sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
     });
 
@@ -225,14 +226,14 @@ describe('Background Script - FETCH_DIFF', () => {
 
     // Start the fetch (don't await — we want to check pending state mid-flight)
     const responsePromise = sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
       requestId: 'test-request-1',
     });
 
     // While the fetch is in-flight, ABORT_FETCH_DIFF should find the request
     const abortResponse = await sendMessage({
-      type: 'ABORT_FETCH_DIFF',
+      type: MessageTypes.ABORT_FETCH_DIFF,
       requestId: 'test-request-1',
     });
 
@@ -261,14 +262,14 @@ describe('Background Script - FETCH_DIFF', () => {
 
     // Start the fetch
     const responsePromise = sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
       requestId: 'cleanup-test-1',
     });
 
     // Abort it
     await sendMessage({
-      type: 'ABORT_FETCH_DIFF',
+      type: MessageTypes.ABORT_FETCH_DIFF,
       requestId: 'cleanup-test-1',
     });
 
@@ -277,7 +278,7 @@ describe('Background Script - FETCH_DIFF', () => {
 
     // After completion, trying to abort again should return "not found"
     const secondAbort = await sendMessage({
-      type: 'ABORT_FETCH_DIFF',
+      type: MessageTypes.ABORT_FETCH_DIFF,
       requestId: 'cleanup-test-1',
     });
 
@@ -309,14 +310,14 @@ describe('Background Script - ABORT_FETCH_DIFF', () => {
 
     // Start the fetch (don't await — we want to abort mid-flight)
     const responsePromise = sendMessage({
-      type: 'FETCH_DIFF',
+      type: MessageTypes.FETCH_DIFF,
       url: 'https://github.com/owner/repo/commit/abc123.diff',
       requestId: 'abort-test-1',
     });
 
     // Abort it
     const abortResponse = await sendMessage({
-      type: 'ABORT_FETCH_DIFF',
+      type: MessageTypes.ABORT_FETCH_DIFF,
       requestId: 'abort-test-1',
     });
 
@@ -334,7 +335,7 @@ describe('Background Script - ABORT_FETCH_DIFF', () => {
 
   it('should return error for unknown requestId', async () => {
     const response = await sendMessage({
-      type: 'ABORT_FETCH_DIFF',
+      type: MessageTypes.ABORT_FETCH_DIFF,
       requestId: 'nonexistent-id',
     });
 

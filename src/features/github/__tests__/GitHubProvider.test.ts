@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { GitHubProvider } from '../GitHubProvider';
 import { ErrorCode } from '@/lib/providers/types';
+import type { CacheAdapter } from '@/lib/providers/types';
 import type { FileNode } from '@/types';
-import { useStore } from '@/store';
 
 // Mock GitHub API responses
 const mockBranchesResponse = [
@@ -89,10 +89,68 @@ afterAll(() => server.close());
 
 describe('GitHubProvider', () => {
   let provider: GitHubProvider;
+  let mockCacheAdapter: CacheAdapter;
+  let getCachedRepoSpy: ReturnType<typeof vi.fn>;
+  let setCachedRepoSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     provider = new GitHubProvider();
-    useStore.getState().clearCache();
+    getCachedRepoSpy = vi.fn().mockReturnValue(null);
+    setCachedRepoSpy = vi.fn();
+    mockCacheAdapter = {
+      getCachedRepo: getCachedRepoSpy,
+      setCachedRepo: setCachedRepoSpy,
+    };
+  });
+
+  describe('CacheAdapter injection', () => {
+    it('should check cache on fetchTree', async () => {
+      provider.setCacheAdapter(mockCacheAdapter);
+      await provider.fetchTree('https://github.com/owner/repo');
+
+      expect(getCachedRepoSpy).toHaveBeenCalled();
+    });
+
+    it('should write to cache on successful fetch', async () => {
+      provider.setCacheAdapter(mockCacheAdapter);
+      await provider.fetchTree('https://github.com/owner/repo');
+
+      expect(setCachedRepoSpy).toHaveBeenCalled();
+      const [cacheKey, cachedData] = setCachedRepoSpy.mock.calls[0];
+      expect(cacheKey).toContain('owner/repo');
+      expect(Array.isArray(cachedData)).toBe(true);
+    });
+
+    it('should return cached data when cache hit', async () => {
+      const cachedNodes: FileNode[] = [
+        { path: 'cached.ts', type: 'blob', url: 'https://example.com', urlType: 'api' },
+      ];
+      getCachedRepoSpy.mockReturnValue({ data: cachedNodes });
+      provider.setCacheAdapter(mockCacheAdapter);
+
+      const tree = await provider.fetchTree('https://github.com/owner/repo');
+
+      expect(tree).toEqual(cachedNodes);
+      expect(setCachedRepoSpy).not.toHaveBeenCalled();
+    });
+
+    it('should work without cache adapter (cache skip)', async () => {
+      // No setCacheAdapter call — provider should still work
+      const tree = await provider.fetchTree('https://github.com/owner/repo');
+
+      expect(tree).toBeDefined();
+      expect(Array.isArray(tree)).toBe(true);
+      expect(tree.length).toBeGreaterThan(0);
+    });
+
+    it('should use credentials.token for auth, not store', async () => {
+      const token = 'ghp_testtoken123';
+      provider.setCredentials({ token });
+
+      // Verify provider can be used without any store
+      const tree = await provider.fetchTree('https://github.com/owner/repo');
+      expect(tree).toBeDefined();
+    });
   });
 
   describe('getType and getName', () => {

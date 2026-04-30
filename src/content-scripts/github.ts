@@ -417,13 +417,9 @@ function injectCopyDiffButton(): void {
       const diffUrl = constructDiffUrl();
       const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      if (!chrome.runtime || !chrome.runtime.sendMessage) {
-        throw new Error('Extension context not available');
-      }
-
       // Send message to background script to fetch diff
-      const response = await chrome.runtime.sendMessage({
-        type: 'FETCH_DIFF',
+      const response = await sendMessage<FetchDiffRequest, FetchDiffResponse>({
+        type: MessageTypes.FETCH_DIFF,
         url: diffUrl,
         requestId,
       });
@@ -512,28 +508,17 @@ function injectConvertButton(): void {
     const repoUrl = window.location.href;
 
     // Send message to background script to open popup
-    if (chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime
-        .sendMessage({
-          type: 'OPEN_POPUP_WITH_REPO',
-          repoUrl: repoUrl,
-        })
-        .catch(() => {
-          // Fallback: copy URL to clipboard
-          navigator.clipboard.writeText(repoUrl).then(() => {
-            alert(
-              `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
-            );
-          });
-        });
-    } else {
-      // Extension context not available, copy to clipboard
+    sendMessage<OpenPopupWithRepoRequest, OpenPopupWithRepoResponse>({
+      type: MessageTypes.OPEN_POPUP_WITH_REPO,
+      repoUrl: repoUrl,
+    }).catch(() => {
+      // Fallback: copy URL to clipboard
       navigator.clipboard.writeText(repoUrl).then(() => {
         alert(
           `Repository URL copied to clipboard: ${repoUrl}\n\nOpen the repo2txt extension and paste the URL.`
         );
       });
-    }
+    });
   });
 
   // Insert button

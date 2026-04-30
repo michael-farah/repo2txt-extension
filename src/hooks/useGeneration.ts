@@ -1,16 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { Formatter } from '@/lib/formatter';
-import { buildTree, extractDirectories } from '@/lib/tree-builder';
 import { ProviderError } from '@/lib/providers/types';
-import type { FileNode, FileContent, FormattedOutput } from '@/types';
+import { ChromeBridge } from '@/lib/chrome';
+import type { FileNode, FileContent, FormattedOutput, TreeNode } from '@/types';
 import type { IProvider } from '@/lib/providers/types';
 import { logger } from '@/lib/utils/logger';
-
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
 
 type SelectionState = 'checked' | 'unchecked' | 'indeterminate';
 
@@ -22,6 +16,7 @@ interface UseGenerationOpts {
   excludedPaths: Set<string>;
   showExcluded: boolean;
   getDirectorySelectionState: (path: string) => SelectionState;
+  getFullTree: () => TreeNode[];
   onError: (error: { message: string; recovery?: () => void; recoveryLabel?: string }) => void;
 }
 
@@ -34,6 +29,7 @@ export function useGeneration(opts: UseGenerationOpts) {
     excludedPaths,
     showExcluded,
     getDirectorySelectionState,
+    getFullTree,
     onError,
   } = opts;
 
@@ -60,47 +56,19 @@ export function useGeneration(opts: UseGenerationOpts) {
         return;
       }
 
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing) {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'generating', timestamp: Date.now() },
-            });
-          }
-        });
-      }
+      ChromeBridge.updateProcessingStatus('generating');
 
       // Fetch file contents with abort support
       const fileContents: FileContent[] = [];
-      for await (const content of currentProvider.fetchMultiple(selectedNodes, abortController.signal)) {
+      for await (const content of currentProvider.fetchMultiple(
+        selectedNodes,
+        abortController.signal
+      )) {
         fileContents.push(content);
       }
 
-      // Build a fully expanded tree for output (ignore UI expansion state)
-      const existingPaths = new Set(nodes.map((n) => n.path));
-      const dirPaths = extractDirectories(nodes);
-      const newDirNodes = dirPaths
-        .filter((path) => !existingPaths.has(path))
-        .map((path) => ({
-          path,
-          type: 'tree' as const,
-        }));
-      let allNodes: FileNode[] = [...nodes, ...newDirNodes];
-
-      // Filter out excluded files and directories if showExcluded is false
-      if (!showExcluded) {
-        allNodes = allNodes.filter((n) => !excludedPaths.has(n.path));
-      }
-
-      // Build tree with all directories expanded (pass all paths as expanded)
-      const allDirPaths = new Set(allNodes.filter((n) => n.type === 'tree').map((n) => n.path));
-      const fullTree = buildTree(allNodes, {
-        selectedPaths,
-        excludedPaths: showExcluded ? excludedPaths : new Set(), // Clear excluded paths if not showing them
-        expandedPaths: allDirPaths, // All directories expanded for output
-        getDirectorySelectionState,
-      });
+      // Get fully expanded tree for output (excluded filtered based on showExcluded)
+      const fullTree = getFullTree();
 
       // Format output with full tree (using async Web Worker for better performance)
       const formattedOutput = await Formatter.formatAsync(
@@ -108,7 +76,10 @@ export function useGeneration(opts: UseGenerationOpts) {
         fileContents,
         (progress, current, total) => {
           // Progress callback - could show progress UI here
-    logger.info('generation', `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`);
+          logger.info(
+            'generation',
+            `Tokenizing: ${current}/${total} files (${progress.toFixed(1)}%)`
+          );
         }
       );
 
@@ -133,22 +104,14 @@ export function useGeneration(opts: UseGenerationOpts) {
         });
       } else {
         onError({
-          message: err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
+          message:
+            err instanceof Error ? err.message : 'Failed to generate output. Please try again.',
         });
       }
     } finally {
       setIsGenerating(false);
 
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        chrome.storage.session.get('processingState').then((result) => {
-          const existing = result.processingState as ProcessingState | undefined;
-          if (existing?.status === 'generating') {
-            chrome.storage.session.set({
-              processingState: { ...existing, status: 'loaded', timestamp: Date.now() },
-            });
-          }
-        });
-      }
+      ChromeBridge.updateProcessingStatus('loaded');
     }
   }, [
     currentProvider,
@@ -158,6 +121,7 @@ export function useGeneration(opts: UseGenerationOpts) {
     excludedPaths,
     getDirectorySelectionState,
     showExcluded,
+    getFullTree,
     onError,
   ]);
 

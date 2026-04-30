@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { GitHubProvider } from '@/features/github';
 import { useStore } from '@/store';
-
-interface ProcessingState {
-  repoUrl: string;
-  status: 'loading' | 'loaded' | 'generating';
-  timestamp: number;
-}
-
+import { ChromeBridge } from '@/lib/chrome/ChromeBridge';
+import type { ProcessingState } from '@/lib/chrome/ProcessingState';
 export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void) {
   const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined);
   const [autoSubmitUrl, setAutoSubmitUrl] = useState<string | undefined>(undefined);
@@ -21,7 +16,7 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
 
     const initialize = async () => {
       // Skip if not in Chrome extension context
-      if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
 
       try {
         const provider = new GitHubProvider();
@@ -39,8 +34,7 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
         }
 
         // 1. Check for existing processing state
-        const stateResult = await chrome.storage.session.get('processingState');
-        const processingState = stateResult.processingState as ProcessingState | undefined;
+        const processingState = await ChromeBridge.getProcessingState();
 
         if (processingState?.repoUrl) {
           // If we're on a NEW GitHub page and previous processing finished, discard old state
@@ -63,13 +57,15 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
         }
 
         // 2. Check for legacy pendingRepoUrl (content script clicked "Convert to Text")
-        const pendingResult = await chrome.storage.session.get('pendingRepoUrl');
-        if (pendingResult.pendingRepoUrl) {
-          const url = pendingResult.pendingRepoUrl as string;
-          setInitialUrl(url);
-          setAutoSubmitUrl(url);
-          chrome.storage.session.remove('pendingRepoUrl');
-          return;
+        if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+          const pendingResult = await chrome.storage.session.get('pendingRepoUrl');
+          if (pendingResult.pendingRepoUrl) {
+            const url = pendingResult.pendingRepoUrl as string;
+            setInitialUrl(url);
+            setAutoSubmitUrl(url);
+            chrome.storage.session.remove('pendingRepoUrl');
+            return;
+          }
         }
 
         // 3. Auto-detect current tab URL (if it's a GitHub repo page)
@@ -146,9 +142,7 @@ export function useChromeTab(isLoading: boolean, onNewRepoDetected?: () => void)
     setAutoSubmitUrl(undefined);
     setGithubTabId(null);
 
-    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-      chrome.storage.session.remove('processingState');
-    }
+    ChromeBridge.clearProcessingState();
   };
 
   return { initialUrl, autoSubmitUrl, githubTabId, resetTabState };

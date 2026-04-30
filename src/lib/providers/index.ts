@@ -6,4 +6,4 @@ export {
   getProviderForUrl,
 } from './ProviderFactory';
 export { ProviderError, ErrorCode } from './types';
-export type { IProvider, ParsedRepoInfo, RateLimiterConfig } from './types';
+export type { IProvider, ParsedRepoInfo, RateLimiterConfig, CacheAdapter } from './types';
