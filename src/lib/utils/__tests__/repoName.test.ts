@@ -4,6 +4,7 @@ import {
   extractGitHubRepoName,
   extractLocalName,
   getDefaultFilename,
+  normalizeGitHubUrl,
 } from '../repoName';
 
 describe('repoName utilities', () => {
@@ -121,6 +122,79 @@ describe('repoName utilities', () => {
     it('should sanitize the prefix', () => {
       const filename = getDefaultFilename('my:repo');
       expect(filename).toMatch(/^my-repo-\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe('normalizeGitHubUrl', () => {
+    it('should lowercase the owner', () => {
+      expect(normalizeGitHubUrl('https://github.com/Facebook/React')).toBe(
+        'https://github.com/facebook/React'
+      );
+    });
+
+    it('should strip trailing slashes', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo/')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should strip query strings', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo?tab=readme')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should strip hash fragments', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo#readme')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should strip .git suffix', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo.git')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should preserve branch/path segments', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo/tree/main')).toBe(
+        'https://github.com/owner/repo/tree/main'
+      );
+      expect(normalizeGitHubUrl('https://github.com/owner/repo/tree/main/packages')).toBe(
+        'https://github.com/owner/repo/tree/main/packages'
+      );
+    });
+
+    it('should handle combined normalizations', () => {
+      expect(normalizeGitHubUrl('https://github.com/Facebook/React/?tab=readme')).toBe(
+        'https://github.com/facebook/React'
+      );
+      expect(normalizeGitHubUrl('https://github.com/OWNER/repo.git#section')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should return non-GitHub URLs unchanged', () => {
+      expect(normalizeGitHubUrl('https://gitlab.com/owner/repo')).toBe(
+        'https://gitlab.com/owner/repo'
+      );
+    });
+
+    it('should return invalid URLs unchanged', () => {
+      expect(normalizeGitHubUrl('not-a-url')).toBe('not-a-url');
+      expect(normalizeGitHubUrl('')).toBe('');
+    });
+
+    it('should handle already-normalized URLs', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo')).toBe(
+        'https://github.com/owner/repo'
+      );
+    });
+
+    it('should handle .git suffix with branch path', () => {
+      expect(normalizeGitHubUrl('https://github.com/owner/repo.git/tree/main')).toBe(
+        'https://github.com/owner/repo/tree/main'
+      );
     });
   });
 });

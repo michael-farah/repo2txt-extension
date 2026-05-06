@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { FileNode, TreeNode, ProviderType } from '@/types';
+import { normalizeGitHubUrl } from '@/lib/utils/repoName';
 
 export interface RepoSnapshot {
   data: FileNode[];
@@ -127,12 +128,13 @@ export const createCacheSlice: StateCreator<CacheSlice> = (set, get) => ({
   },
 
   snapshotRepoState: (repoUrl: string, snapshot: RepoSnapshot) => {
+    const normalizedUrl = normalizeGitHubUrl(repoUrl);
     set((state) => {
       const newCache = { ...state.repoCache };
 
       // Check if we need to evict entries
       const cacheKeys = Object.keys(newCache);
-      if (cacheKeys.length >= MAX_CACHE_ENTRIES && !(repoUrl in newCache)) {
+      if (cacheKeys.length >= MAX_CACHE_ENTRIES && !(normalizedUrl in newCache)) {
         // Find the oldest entry that is NOT in recentRepos
         const recentUrls = new Set(state.recentRepos.map((r) => r.url));
         let oldestKey: string | null = null;
@@ -166,7 +168,7 @@ export const createCacheSlice: StateCreator<CacheSlice> = (set, get) => ({
         }
       }
 
-      newCache[repoUrl] = {
+      newCache[normalizedUrl] = {
         ...snapshot,
         timestamp: Date.now(),
       };
@@ -176,12 +178,13 @@ export const createCacheSlice: StateCreator<CacheSlice> = (set, get) => ({
   },
 
   restoreRepoState: (repoUrl: string) => {
-    const cache = get().repoCache[repoUrl];
+    const normalizedUrl = normalizeGitHubUrl(repoUrl);
+    const cache = get().repoCache[normalizedUrl];
     if (!cache) return null;
 
     // Check TTL
     if (Date.now() - cache.timestamp > CACHE_TTL) {
-      get().clearCache(repoUrl);
+      get().clearCache(normalizedUrl);
       return null;
     }
 
@@ -191,13 +194,14 @@ export const createCacheSlice: StateCreator<CacheSlice> = (set, get) => ({
   },
 
   addRecentRepo: (repoUrl: string, repoName: string) => {
+    const normalizedUrl = normalizeGitHubUrl(repoUrl);
     set((state) => {
       // Remove if already exists (to move to front)
-      const filtered = state.recentRepos.filter((r) => r.url !== repoUrl);
+      const filtered = state.recentRepos.filter((r) => r.url !== normalizedUrl);
 
       // Add to front
       const newRecent = [
-        { url: repoUrl, name: repoName, timestamp: Date.now() },
+        { url: normalizedUrl, name: repoName, timestamp: Date.now() },
         ...filtered,
       ].slice(0, MAX_RECENT_REPOS);
 

@@ -11,6 +11,7 @@ import { ProviderError } from '@/lib/providers/types';
 import type { IProvider, CacheAdapter } from '@/lib/providers/types';
 import type { FileNode, ProviderType, TreeNode } from '@/types';
 import type { RepoSnapshot } from '@/store/slices/cacheSlice';
+import { normalizeGitHubUrl } from '@/lib/utils/repoName';
 
 // ============================================================================
 // Interfaces
@@ -149,6 +150,9 @@ export class RepoSession {
     url: string,
     meta?: { providerType: ProviderType; repoName: string }
   ): Promise<FileNode[] | null> {
+    // Normalize URL for consistent cache/recent keys
+    const normalizedUrl = normalizeGitHubUrl(url);
+
     // Save the previous URL BEFORE anything changes
     const previousUrl = this.store.getRepoUrl();
 
@@ -170,7 +174,7 @@ export class RepoSession {
       ChromeBridge.setProcessingState({ repoUrl: url, status: 'loading', timestamp: Date.now() });
 
       // Check if we have a fresh cached version
-      const cached = this.store.restoreRepoState(url);
+      const cached = this.store.restoreRepoState(normalizedUrl);
       if (cached) {
         // Commit the URL and provider type on cache hit
         if (meta?.providerType) this.store.setProviderType(meta.providerType);
@@ -193,7 +197,7 @@ export class RepoSession {
           timestamp: Date.now(),
         });
 
-        this.store.addRecentRepo(url, this.repoName);
+        this.store.addRecentRepo(normalizedUrl, this.repoName);
 
         this.loading = false;
         this.callbacks.onStateChange(this.getState());
@@ -224,7 +228,7 @@ export class RepoSession {
       });
 
       this.store.setNodes(fetchedNodes);
-      this.store.addRecentRepo(url, this.repoName);
+      this.store.addRecentRepo(normalizedUrl, this.repoName);
 
       this.loading = false;
       this.callbacks.onStateChange(this.getState());
@@ -276,7 +280,7 @@ export class RepoSession {
    * Snapshot current repo state before switching to a new one.
    */
   snapshotCurrentState(url?: string): void {
-    const currentRepoUrl = url || this.store.getRepoUrl();
+    const currentRepoUrl = normalizeGitHubUrl(url || this.store.getRepoUrl());
     const currentNodes = this.store.getNodes();
 
     if (!currentRepoUrl || currentNodes.length === 0) return;
@@ -301,7 +305,8 @@ export class RepoSession {
    * Restore a previously cached repo state without re-fetching.
    */
   restoreCachedRepo(url: string): boolean {
-    const snapshot = this.store.restoreRepoState(url);
+    const normalizedUrl = normalizeGitHubUrl(url);
+    const snapshot = this.store.restoreRepoState(normalizedUrl);
     if (!snapshot) return false;
 
     // Restore all state from snapshot
@@ -326,7 +331,7 @@ export class RepoSession {
     });
 
     // Add back to recent repos
-    this.store.addRecentRepo(url, snapshot.repoName);
+    this.store.addRecentRepo(normalizedUrl, snapshot.repoName);
 
     this.callbacks.onStateChange(this.getState());
     return true;
