@@ -214,7 +214,7 @@ describe('RepoSession', () => {
         fetchTree: vi.fn().mockRejectedValue(providerError),
       });
 
-      await session.loadFiles(provider, 'https://github.com/test/repo');
+      await expect(session.loadFiles(provider, 'https://github.com/test/repo')).rejects.toThrow();
 
       expect(onError).toHaveBeenCalledWith({
         message: 'Repository not found. Please check the URL.',
@@ -229,7 +229,9 @@ describe('RepoSession', () => {
         fetchTree: vi.fn().mockRejectedValue(new Error('Network failure')),
       });
 
-      await session.loadFiles(provider, 'https://github.com/test/repo');
+      await expect(session.loadFiles(provider, 'https://github.com/test/repo')).rejects.toThrow(
+        'Network failure'
+      );
 
       expect(onError).toHaveBeenCalledWith({
         message: 'Network failure',
@@ -242,179 +244,181 @@ describe('RepoSession', () => {
         fetchTree: vi.fn().mockRejectedValue(new Error('fail')),
       });
 
-      await session.loadFiles(provider, 'https://github.com/test/repo');
+      await expect(session.loadFiles(provider, 'https://github.com/test/repo')).rejects.toThrow(
+        'fail'
+      );
 
       const state = session.getState();
       expect(state.isLoading).toBe(false);
     });
-  });
 
-  describe('cancelLoad', () => {
-    it('should abort an in-progress load', async () => {
-      const session = new RepoSession(callbacks, storeAdapter);
-      let _resolveFetch!: (value: FileNode[]) => void;
-      new Promise<FileNode[]>((resolve) => {
-        _resolveFetch = resolve;
+    describe('cancelLoad', () => {
+      it('should abort an in-progress load', async () => {
+        const session = new RepoSession(callbacks, storeAdapter);
+        let _resolveFetch!: (value: FileNode[]) => void;
+        new Promise<FileNode[]>((resolve) => {
+          _resolveFetch = resolve;
+        });
+
+        const provider = createMockProvider({
+          fetchTree: vi.fn().mockImplementation(
+            () =>
+              new Promise((resolve, reject) => {
+                const abortError = new Error('Aborted');
+                abortError.name = 'AbortError';
+                // Simulate abort
+                setTimeout(() => reject(abortError), 50);
+              })
+          ),
+        });
+
+        const loadPromise = session.loadFiles(provider, 'https://github.com/test/repo');
+
+        // Cancel while loading
+        session.cancelLoad();
+
+        const result = await loadPromise;
+        expect(result).toBeNull();
+        expect(session.getState().isLoading).toBe(false);
       });
 
-      const provider = createMockProvider({
-        fetchTree: vi.fn().mockImplementation(
-          () =>
-            new Promise((resolve, reject) => {
-              const abortError = new Error('Aborted');
-              abortError.name = 'AbortError';
-              // Simulate abort
-              setTimeout(() => reject(abortError), 50);
-            })
-        ),
+      it('should be safe to call when no load is in progress', () => {
+        const session = new RepoSession(callbacks, storeAdapter);
+        expect(() => session.cancelLoad()).not.toThrow();
+      });
+    });
+
+    describe('snapshotCurrentState', () => {
+      it('should create a snapshot of the current repo state', () => {
+        const nodes: FileNode[] = [{ path: 'file.ts', type: 'blob' as const }];
+        const selectedPaths = new Set(['file.ts']);
+        const expandedPaths = new Set(['src']);
+        const extensions = new Map([['.ts', { count: 1, selected: true }]]);
+
+        storeAdapter.getNodes = vi.fn().mockReturnValue(nodes);
+        storeAdapter.getTree = vi.fn().mockReturnValue([]);
+        storeAdapter.getSelectedPaths = vi.fn().mockReturnValue(selectedPaths);
+        storeAdapter.getExpandedPaths = vi.fn().mockReturnValue(expandedPaths);
+        storeAdapter.getExcludedPaths = vi.fn().mockReturnValue(new Set());
+        storeAdapter.getExtensions = vi.fn().mockReturnValue(extensions);
+        storeAdapter.getGitignorePatterns = vi.fn().mockReturnValue(['node_modules']);
+        storeAdapter.getProviderType = vi.fn().mockReturnValue('github');
+        storeAdapter.getRepoUrl = vi.fn().mockReturnValue('https://github.com/test/repo');
+
+        const session = new RepoSession(callbacks, storeAdapter);
+        session.snapshotCurrentState();
+
+        expect(storeAdapter.snapshotRepoState).toHaveBeenCalledWith(
+          'https://github.com/test/repo',
+          expect.objectContaining({
+            data: nodes,
+            selectedPaths: ['file.ts'],
+            expandedPaths: ['src'],
+            gitignorePatterns: ['node_modules'],
+            providerType: 'github',
+            repoUrl: 'https://github.com/test/repo',
+          })
+        );
       });
 
-      const loadPromise = session.loadFiles(provider, 'https://github.com/test/repo');
+      it('should skip snapshot if no repo URL is set', () => {
+        storeAdapter.getRepoUrl = vi.fn().mockReturnValue('');
 
-      // Cancel while loading
-      session.cancelLoad();
+        const session = new RepoSession(callbacks, storeAdapter);
+        session.snapshotCurrentState();
 
-      const result = await loadPromise;
-      expect(result).toBeNull();
-      expect(session.getState().isLoading).toBe(false);
+        expect(storeAdapter.snapshotRepoState).not.toHaveBeenCalled();
+      });
+
+      it('should skip snapshot if no nodes loaded', () => {
+        storeAdapter.getRepoUrl = vi.fn().mockReturnValue('https://github.com/test/repo');
+        storeAdapter.getNodes = vi.fn().mockReturnValue([]);
+
+        const session = new RepoSession(callbacks, storeAdapter);
+        session.snapshotCurrentState();
+
+        expect(storeAdapter.snapshotRepoState).not.toHaveBeenCalled();
+      });
     });
 
-    it('should be safe to call when no load is in progress', () => {
-      const session = new RepoSession(callbacks, storeAdapter);
-      expect(() => session.cancelLoad()).not.toThrow();
-    });
-  });
-
-  describe('snapshotCurrentState', () => {
-    it('should create a snapshot of the current repo state', () => {
-      const nodes: FileNode[] = [{ path: 'file.ts', type: 'blob' as const }];
-      const selectedPaths = new Set(['file.ts']);
-      const expandedPaths = new Set(['src']);
-      const extensions = new Map([['.ts', { count: 1, selected: true }]]);
-
-      storeAdapter.getNodes = vi.fn().mockReturnValue(nodes);
-      storeAdapter.getTree = vi.fn().mockReturnValue([]);
-      storeAdapter.getSelectedPaths = vi.fn().mockReturnValue(selectedPaths);
-      storeAdapter.getExpandedPaths = vi.fn().mockReturnValue(expandedPaths);
-      storeAdapter.getExcludedPaths = vi.fn().mockReturnValue(new Set());
-      storeAdapter.getExtensions = vi.fn().mockReturnValue(extensions);
-      storeAdapter.getGitignorePatterns = vi.fn().mockReturnValue(['node_modules']);
-      storeAdapter.getProviderType = vi.fn().mockReturnValue('github');
-      storeAdapter.getRepoUrl = vi.fn().mockReturnValue('https://github.com/test/repo');
-
-      const session = new RepoSession(callbacks, storeAdapter);
-      session.snapshotCurrentState();
-
-      expect(storeAdapter.snapshotRepoState).toHaveBeenCalledWith(
-        'https://github.com/test/repo',
-        expect.objectContaining({
-          data: nodes,
+    describe('restoreCachedRepo', () => {
+      it('should restore state from snapshot and return true', () => {
+        const snapshot: RepoSnapshot = {
+          data: [{ path: 'file.ts', type: 'blob' as const }],
+          fileTree: [{ name: 'file.ts', path: 'file.ts', type: 'file' as const }],
           selectedPaths: ['file.ts'],
-          expandedPaths: ['src'],
-          gitignorePatterns: ['node_modules'],
+          expandedPaths: [],
+          excludedPaths: [],
+          extensions: [],
+          gitignorePatterns: [],
           providerType: 'github',
           repoUrl: 'https://github.com/test/repo',
-        })
-      );
-    });
+          repoName: 'test-repo',
+        };
 
-    it('should skip snapshot if no repo URL is set', () => {
-      storeAdapter.getRepoUrl = vi.fn().mockReturnValue('');
+        storeAdapter.restoreRepoState = vi.fn().mockReturnValue(snapshot);
 
-      const session = new RepoSession(callbacks, storeAdapter);
-      session.snapshotCurrentState();
+        const session = new RepoSession(callbacks, storeAdapter);
+        const result = session.restoreCachedRepo('https://github.com/test/repo');
 
-      expect(storeAdapter.snapshotRepoState).not.toHaveBeenCalled();
-    });
-
-    it('should skip snapshot if no nodes loaded', () => {
-      storeAdapter.getRepoUrl = vi.fn().mockReturnValue('https://github.com/test/repo');
-      storeAdapter.getNodes = vi.fn().mockReturnValue([]);
-
-      const session = new RepoSession(callbacks, storeAdapter);
-      session.snapshotCurrentState();
-
-      expect(storeAdapter.snapshotRepoState).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('restoreCachedRepo', () => {
-    it('should restore state from snapshot and return true', () => {
-      const snapshot: RepoSnapshot = {
-        data: [{ path: 'file.ts', type: 'blob' as const }],
-        fileTree: [{ name: 'file.ts', path: 'file.ts', type: 'file' as const }],
-        selectedPaths: ['file.ts'],
-        expandedPaths: [],
-        excludedPaths: [],
-        extensions: [],
-        gitignorePatterns: [],
-        providerType: 'github',
-        repoUrl: 'https://github.com/test/repo',
-        repoName: 'test-repo',
-      };
-
-      storeAdapter.restoreRepoState = vi.fn().mockReturnValue(snapshot);
-
-      const session = new RepoSession(callbacks, storeAdapter);
-      const result = session.restoreCachedRepo('https://github.com/test/repo');
-
-      expect(result).toBe(true);
-      expect(storeAdapter.setNodes).toHaveBeenCalledWith(snapshot.data);
-      expect(storeAdapter.setTree).toHaveBeenCalledWith(snapshot.fileTree);
-      expect(storeAdapter.setGitignorePatterns).toHaveBeenCalledWith(snapshot.gitignorePatterns);
-      expect(storeAdapter.setProviderType).toHaveBeenCalledWith(snapshot.providerType);
-      expect(storeAdapter.setRepoUrl).toHaveBeenCalledWith(snapshot.repoUrl);
-      expect(storeAdapter.addRecentRepo).toHaveBeenCalledWith(
-        'https://github.com/test/repo',
-        'test-repo'
-      );
-    });
-
-    it('should return false when no cached state exists', () => {
-      storeAdapter.restoreRepoState = vi.fn().mockReturnValue(null);
-
-      const session = new RepoSession(callbacks, storeAdapter);
-      const result = session.restoreCachedRepo('https://github.com/test/repo');
-
-      expect(result).toBe(false);
-      expect(storeAdapter.setNodes).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('reset', () => {
-    it('should clear all session state', async () => {
-      const session = new RepoSession(callbacks, storeAdapter);
-      const provider = createMockProvider({
-        fetchTree: vi
-          .fn()
-          .mockResolvedValue([{ path: 'file.ts', type: 'blob' as const, url: 'test' }]),
+        expect(result).toBe(true);
+        expect(storeAdapter.setNodes).toHaveBeenCalledWith(snapshot.data);
+        expect(storeAdapter.setTree).toHaveBeenCalledWith(snapshot.fileTree);
+        expect(storeAdapter.setGitignorePatterns).toHaveBeenCalledWith(snapshot.gitignorePatterns);
+        expect(storeAdapter.setProviderType).toHaveBeenCalledWith(snapshot.providerType);
+        expect(storeAdapter.setRepoUrl).toHaveBeenCalledWith(snapshot.repoUrl);
+        expect(storeAdapter.addRecentRepo).toHaveBeenCalledWith(
+          'https://github.com/test/repo',
+          'test-repo'
+        );
       });
 
-      await session.loadFiles(provider, 'https://github.com/test/repo');
-      expect(session.getState().provider).not.toBeNull();
+      it('should return false when no cached state exists', () => {
+        storeAdapter.restoreRepoState = vi.fn().mockReturnValue(null);
 
-      session.reset();
+        const session = new RepoSession(callbacks, storeAdapter);
+        const result = session.restoreCachedRepo('https://github.com/test/repo');
 
-      const state = session.getState();
-      expect(state.provider).toBeNull();
-      expect(state.repoName).toBe('repo-export');
-      expect(state.isLoading).toBe(false);
-
-      expect(storeAdapter.setNodes).toHaveBeenCalledWith([]);
-      expect(storeAdapter.setTree).toHaveBeenCalledWith([]);
-      expect(storeAdapter.setGitignorePatterns).toHaveBeenCalledWith([]);
+        expect(result).toBe(false);
+        expect(storeAdapter.setNodes).not.toHaveBeenCalled();
+      });
     });
-  });
 
-  describe('getState', () => {
-    it('should return current state', () => {
-      const session = new RepoSession(callbacks, storeAdapter);
-      const state = session.getState();
+    describe('reset', () => {
+      it('should clear all session state', async () => {
+        const session = new RepoSession(callbacks, storeAdapter);
+        const provider = createMockProvider({
+          fetchTree: vi
+            .fn()
+            .mockResolvedValue([{ path: 'file.ts', type: 'blob' as const, url: 'test' }]),
+        });
 
-      expect(state).toEqual({
-        provider: null,
-        repoName: 'repo-export',
-        isLoading: false,
+        await session.loadFiles(provider, 'https://github.com/test/repo');
+        expect(session.getState().provider).not.toBeNull();
+
+        session.reset();
+
+        const state = session.getState();
+        expect(state.provider).toBeNull();
+        expect(state.repoName).toBe('repo-export');
+        expect(state.isLoading).toBe(false);
+
+        expect(storeAdapter.setNodes).toHaveBeenCalledWith([]);
+        expect(storeAdapter.setTree).toHaveBeenCalledWith([]);
+        expect(storeAdapter.setGitignorePatterns).toHaveBeenCalledWith([]);
+      });
+    });
+
+    describe('getState', () => {
+      it('should return current state', () => {
+        const session = new RepoSession(callbacks, storeAdapter);
+        const state = session.getState();
+
+        expect(state).toEqual({
+          provider: null,
+          repoName: 'repo-export',
+          isLoading: false,
+        });
       });
     });
   });

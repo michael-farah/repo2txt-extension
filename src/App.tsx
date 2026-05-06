@@ -78,7 +78,8 @@ function App() {
   // Build tree from store's getTree method
   const tree = useMemo(() => {
     return getTree();
-  }, [getTree]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nodes/selections/exclusions trigger recomputation even though getTree is stable
+  }, [getTree, nodes, selectedPaths, _expandedPaths, excludedPaths, gitignorePatterns]);
 
   // Convert extensions map to array for ExtensionFilter component
   const extensionList: ExtensionFilterType[] = useMemo(() => {
@@ -102,18 +103,18 @@ function App() {
 
   // Auto-expand root directories when tree first loads
   useEffect(() => {
-    if (tree.length > 0 && tree.length === nodes.length) {
+    if (nodes.length > 0) {
       const shouldExpand = autoExpandDirectories || shouldAutoExpandRootRef.current;
       if (shouldExpand) {
         shouldAutoExpandRootRef.current = false;
-        tree.forEach((node) => {
+        getTree().forEach((node) => {
           if (node.type === 'directory') {
             toggleExpanded(node.path);
           }
         });
       }
     }
-  }, [tree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories, nodes.length]);
+  }, [nodes.length, getTree, toggleExpanded, shouldAutoExpandRootRef, autoExpandDirectories]);
 
   // Handle extension filter toggle
   const handleExtensionToggle = useCallback(

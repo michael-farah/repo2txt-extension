@@ -18,7 +18,7 @@ function createStoreAdapter(): StoreAdapter {
   const store = useStore.getState;
   return {
     getNodes: () => store().nodes,
-    getTree: () => store().tree,
+    getTree: () => store().getTree(),
     getSelectedPaths: () => store().selectedPaths,
     getExpandedPaths: () => store().expandedPaths,
     getExcludedPaths: () => store().excludedPaths,
@@ -86,14 +86,16 @@ export function useProviderLoader(opts: UseProviderLoaderOpts) {
   // Handle GitHub submission
   const handleGitHubSubmit = useCallback(
     async (url: string) => {
-      useStore.getState().setProviderType('github');
-      useStore.getState().setRepoUrl(url);
       const name = extractGitHubRepoName(url);
       session.setRepoName(name);
       setRepoNameState(name);
 
       const provider = session.createGitHubProvider(useStore.getState().pat);
-      await session.loadFiles(provider, url);
+      try {
+        await session.loadFiles(provider, url, { providerType: 'github', repoName: name });
+      } catch {
+        // loadFiles already called onError — nothing else to do
+      }
     },
     [session]
   );
