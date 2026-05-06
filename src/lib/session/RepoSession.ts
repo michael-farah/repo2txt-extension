@@ -144,9 +144,16 @@ export class RepoSession {
    * Load files from a provider. Snapshots current state first,
    * checks cache, then fetches if needed.
    */
-  async loadFiles(provider: IProvider, url: string): Promise<FileNode[] | null> {
-    // Snapshot current state before loading new repo
-    this.snapshotCurrentState();
+  async loadFiles(
+    provider: IProvider,
+    url: string,
+    meta?: { providerType: ProviderType; repoName: string }
+  ): Promise<FileNode[] | null> {
+    // Save the previous URL BEFORE anything changes
+    const previousUrl = this.store.getRepoUrl();
+
+    // Snapshot current state using the PREVIOUS url (not the incoming one)
+    this.snapshotCurrentState(previousUrl);
 
     // Cancel any in-progress load
     if (this.abortController) {
@@ -165,6 +172,10 @@ export class RepoSession {
       // Check if we have a fresh cached version
       const cached = this.store.restoreRepoState(url);
       if (cached) {
+        // Commit the URL and provider type on cache hit
+        if (meta?.providerType) this.store.setProviderType(meta.providerType);
+        this.store.setRepoUrl(url);
+
         this.store.setNodes(cached.data);
         this.store.setTree(cached.fileTree);
         this.store.setGitignorePatterns(cached.gitignorePatterns);
@@ -202,6 +213,10 @@ export class RepoSession {
         return null;
       }
 
+      // Commit the URL and provider type on fetch success
+      if (meta?.providerType) this.store.setProviderType(meta.providerType);
+      this.store.setRepoUrl(url);
+
       ChromeBridge.setProcessingState({
         repoUrl: url,
         status: 'loaded',
@@ -237,7 +252,9 @@ export class RepoSession {
         });
       }
 
-      return null;
+      // Re-throw so the caller can handle the error,
+      // but we DO NOT add to recents or commit the URL
+      throw err;
     }
   }
 
@@ -258,8 +275,8 @@ export class RepoSession {
   /**
    * Snapshot current repo state before switching to a new one.
    */
-  snapshotCurrentState(): void {
-    const currentRepoUrl = this.store.getRepoUrl();
+  snapshotCurrentState(url?: string): void {
+    const currentRepoUrl = url || this.store.getRepoUrl();
     const currentNodes = this.store.getNodes();
 
     if (!currentRepoUrl || currentNodes.length === 0) return;
